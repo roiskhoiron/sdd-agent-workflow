@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info:
+  title: "[nama contract]"
+  version: "1.0.0"   # harus sama dengan contract.json
+  description: >
+    Titik temu antar-role. Semua yang dibutuhkan klien dari server ditulis di sini:
+    aturan validasi, kode error, batas ukuran data, rate limit.
+paths:
+  /contoh:
+    get:
+      summary: "[apa yang dilakukan endpoint ini bagi pengguna]"
+      parameters: []
+      responses:
+        "200":
+          description: Berhasil
+        "400":
+          description: "Kode error dan pesan untuk pengguna, per penyebab"
+        "429":
+          description: "Batas permintaan dan cara klien menunggu"
+components:
+  schemas: {}

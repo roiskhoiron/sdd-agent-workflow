@@ -1,0 +1,41 @@
+---
+name: slice-tickets
+description: Skill internal PjM. Memecah epic menjadi tiket per role sesuai matriks konteks, dengan ketergantungan. Dijalankan oleh subagent pjm.
+user-invocable: false
+---
+
+# Memecah epic menjadi tiket
+
+Masukan: seluruh folder epic, `project.json`, dan `workflow/context-matrix.md`. Keluaran: berkas di `tickets/`.
+
+| Berkas | Kapan dibuat | Template |
+| --- | --- | --- |
+| `tickets/contract-01.md` | Hanya jika `contract/contract.json` berisi `"changed": true` | `workflow/templates/ticket-contract.md` |
+| `tickets/mobile-NN.md` | Satu per potongan kerja Mobile | `workflow/templates/ticket-mobile.md` |
+| `tickets/_lintas-role.md` | Jika epic butuh pekerjaan Backend, Frontend web, atau DevOps | Daftar bebas |
+
+Workflow ini baru menghasilkan tiket Mobile. Pekerjaan role lain dicatat di `_lintas-role.md` supaya operator membuat tiketnya dengan cara yang berlaku sekarang. Berkas berawalan garis bawah tidak dikirim ke Jira.
+
+## Memotong
+
+Satu tiket adalah satu hasil yang bisa diuji sendiri, biasanya satu layar atau satu alur. Jika sebuah tiket butuh lebih dari sekitar tujuh acceptance criteria, pecah lagi. Epic kecil hampir selalu menjadi satu tiket.
+
+## Mengisi tiket Mobile
+
+Tiket harus bisa dikerjakan agen delivery tanpa bertanya balik dan tanpa membaca PRD.
+
+- Pertahankan sembilan bagian dan urutannya. Bagian yang tidak relevan diisi "Tidak ada", bukan dihapus, supaya reviewer tahu itu keputusan dan bukan kelupaan. Bagian 1, 2, dan 7 tidak boleh "Tidak ada".
+- Salin dari sumber yang ditandai Penuh di matriks: tujuan dan acceptance criteria dari `prd.md`, layar dan state dari `flow.md`, endpoint dan kode error dari contract.
+- Jangan menyalin apa pun dari `specs/`. Jika tiket butuh informasi yang hanya ada di sana, laporkan sebagai contract yang belum lengkap.
+- Bagian 8 berisi tautan ke `foundation/design-system.md` dan ke `references` di `project.json`. Jangan menyalin isinya.
+- Front matter: `size` mengikuti ukuran epic, `contract_version` sama dengan manifes contract, `blocked_by` berisi `contract-01` jika tiket contract ada. Tiket yang tidak memakai contract menulis `contract_version: tidak ada`.
+- Judul memakai `[KODE-TIKET]` apa adanya. Kode asli diisi saat tiket masuk Jira.
+- Hapus semua placeholder template: `...` dan `[tautan]`.
+
+Pada epic kecil tidak ada `prd.md` atau `flow.md`. Sumbernya `intake.md`, dan bagian 3 sampai 6 diisi seperlunya atau "Tidak ada".
+
+## Saat dipanggil untuk perubahan
+
+Jika brief menyertakan daftar tiket terdampak, ubah hanya tiket itu. Tiket lain jangan disentuh, termasuk untuk merapikan kalimat. Tiket yang tidak lagi dibutuhkan dihapus berkasnya.
+
+Reviewer gate akan menguji satu hal: apakah tiket bisa dikerjakan tanpa bertanya.

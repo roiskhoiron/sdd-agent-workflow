@@ -1,0 +1,28 @@
+{
+  "name": "ISI: nama proyek",
+  "platforms": ["android", "ios"],
+  "jira": {
+    "site": "ISI: alamat situs, misalnya nama.atlassian.net",
+    "project_key": "ISI",
+    "epic_issue_type": "Epic",
+    "ticket_issue_type": "Story",
+    "ready_status": "ISI: nama status siap dikerjakan di papan",
+    "done_status": "Done",
+    "blocks_link_type": "Blocks"
+  },
+  "contract_format": "openapi-3.1",
+  "mockup_tool": "ISI: figma, claude-design, atau teks",
+  "owners": {
+    "spv": "ISI",
+    "prd": "ISI: product owner",
+    "design": "ISI: Lead UI/UX",
+    "contract": "ISI: Lead Backend",
+    "database": "ISI: Lead Backend",
+    "infrastructure": "ISI: DevOps",
+    "tickets": "ISI"
+  },
+  "references": {
+    "mobile_conventions": "ISI: tautan konvensi kode mobile di repo aplikasi",
+    "environment_config": "ISI: tautan konfigurasi environment (base URL, feature flag)"
+  }
+}

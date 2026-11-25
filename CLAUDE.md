@@ -1,29 +1,23 @@
-# Workflow produksi tiket (BMAD × EGM)
+# Pengembangan sdd-agent-workflow
 
-Repo ini adalah ruang kerja spesifikasi. Ia mengubah satu kebutuhan bisnis menjadi tiket Jira yang siap dikerjakan. Repo ini tidak berisi kode aplikasi, dan pengerjaan tiket adalah wilayah workflow delivery yang terpisah.
-
-Rancangan lengkapnya ada di `README.md`.
-
-## Aturan yang berlaku di setiap sesi
-
-- Workflow dijalankan lewat tiga perintah: `/initiate-epic-ticket`, `/modify-epic-ticket`, `/clean-epic-ticket`. Jangan menjalankan tahapnya secara lepas kecuali operator memintanya.
-- Sesi utama berperan sebagai SPV. SPV mengatur urutan dan memanggil subagent. SPV tidak menulis PRD, flow, contract, atau tiket, dan tidak me-review.
-- Status gate dan persetujuan ditentukan `python3 scripts/sdd.py`, bukan penilaian agen. Jangan mengedit `epic.json`, `approval.json`, atau `jira-map.json` dengan tangan.
-- **Uji coba tidak memakai Jira.** Proyek berstatus `"pilot": true` hanya boleh memakai tracker `lokal` atau `github`. Jangan mengubah `pilot` atau `tracker` di `project.json` tanpa perintah eksplisit operator, dan jangan memanggil tool Atlassian untuk proyek pilot, termasuk untuk membaca.
-- Tracker hanya disentuh oleh skill `push-jira`, dan hanya setelah `sdd.py approve` berhasil. Perintah `approve`, `approve-contract`, dan `decide` hanya dijalankan atas jawaban eksplisit operator.
-- Reviewer EGM selalu sesi baru yang hanya menerima path dokumen. Jangan memberinya ringkasan atau temuan putaran sebelumnya.
-- Isi `projects/*/foundation/` hanya berubah lewat `/clean-epic-ticket` setelah disetujui pemiliknya.
+Repo ini adalah **sumber** workflow produksi tiket, bukan tempat workflow dijalankan. Pengguna memasangnya ke folder lain lewat `install.sh`. Panduan pemakai ada di `README.md`.
 
 ## Susunan
 
 | Lokasi | Isi |
 | --- | --- |
-| `.claude/skills/` | 3 skill pintu masuk dan 11 skill internal |
-| `.claude/agents/` | `pdm`, `product-designer`, `hoe`, `pjm`, `egm-reviewer` |
-| `workflow/` | Matriks konteks, prosedur gate, template dokumen dan proyek |
-| `scripts/sdd.py` | Penjaga aturan: gate, lint tiket, persetujuan, rencana push |
-| `projects/<proyek>/` | `project.json`, `foundation/`, dan `epics/<slug>/` |
+| `src/skills/` | Sumber 14 skill, netral alat |
+| `src/agents/` | Sumber 5 agen peran, frontmatter netral |
+| `src/instructions.md` | Blok aturan untuk berkas instruksi tiap alat |
+| `workflow/` | Matriks konteks, prosedur gate, template |
+| `scripts/sdd.py` | Skrip penjaga aturan, disalin apa adanya ke `<SDD_HOME>/scripts/` |
+| `scripts/install_agent.py` | Pemasang. Profil tiap alat ada di `TOOLS`. |
+| `install.sh` | Antarmuka interaktif pemasang |
 
-## Mengubah workflow
+## Aturan saat mengubah repo ini
 
-Setelah mengubah `scripts/sdd.py`, jalankan `python3 -m unittest discover tests`. Jika template tiket berubah, sesuaikan `MOBILE_SECTIONS` di skrip dan skill `slice-tickets`.
+- Tulis path workflow di `src/` dan `workflow/*.md` dengan placeholder `{{SDD_HOME}}`, bukan path tetap. Pemasang menolak berkas yang masih menyisakan placeholder.
+- Jangan menulis istilah khusus satu alat di `src/` (misalnya nama tool Claude Code). Perbedaan antar-alat diurus di `TOOLS` dan `agent_files` pada pemasang.
+- Aturan "uji coba tidak memakai Jira" dijaga `sdd.py pending-push`. Jangan melemahkannya.
+- Setelah mengubah `scripts/`, `src/`, `workflow/`, atau `install.sh`, jalankan `python3 -m unittest discover tests`.
+- Jika template tiket Mobile berubah, sesuaikan `MOBILE_SECTIONS` di `sdd.py` dan skill `slice-tickets`.

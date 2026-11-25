@@ -1,6 +1,6 @@
 # Menjalankan satu gate EGM
 
-Prosedur ini dijalankan SPV (sesi utama) setelah setiap skill penulis. Skrip `scripts/sdd.py` yang menentukan status gate, bukan penilaianmu.
+Prosedur ini dijalankan SPV setelah setiap skill penulis. Skrip `{{SDD_HOME}}/scripts/sdd.py` yang menentukan status gate, bukan penilaianmu.
 
 ## Dokumen per gate
 
@@ -9,13 +9,13 @@ Prosedur ini dijalankan SPV (sesi utama) setelah setiap skill penulis. Skrip `sc
 | `prd` | `pdm` | `prd.md` | tidak ada |
 | `flow` | `product-designer` | `flow.md` | `prd.md`, `foundation/design-system.md` |
 | `contract` | `hoe` | `contract/`, `specs/` | `prd.md`, `flow.md`, `foundation/katalog-contract.md` |
-| `tickets` | `pjm` | `tickets/*.md` | `workflow/context-matrix.md`, dan untuk tiap tiket hanya berkas yang ditautkan tiket itu |
+| `tickets` | `pjm` | `tickets/*.md` | `{{SDD_HOME}}/workflow/context-matrix.md`, dan untuk tiap tiket hanya berkas yang ditautkan tiket itu |
 
 Pada gate `tickets`, reviewer tidak diberi `prd.md` atau `specs/`. Ia harus bisa memahami tiket dari tiket itu sendiri dan rujukannya, sama seperti agen delivery nanti.
 
 ## Langkah
 
-1. Jalankan `python3 scripts/sdd.py gate <epic> <gate>` dan ikuti statusnya:
+1. Jalankan `python3 {{SDD_HOME}}/scripts/sdd.py gate <epic> <gate>` dan ikuti statusnya:
 
    | Status | Tindakan |
    | --- | --- |
@@ -26,7 +26,7 @@ Pada gate `tickets`, reviewer tidak diberi `prd.md` atau `specs/`. Ia harus bisa
    | `lolos` | Gate selesai. Lanjut ke tahap berikutnya. |
    | `berhenti` | Dua revisi tidak cukup. Hentikan alur dan lanjut ke langkah 4. |
 
-2. Panggil subagent `egm-reviewer` sebagai sesi baru. Brief hanya berisi lima baris ini, tanpa ringkasan, tanpa latar belakang, tanpa pendapatmu:
+2. Jalankan agen peran `egm-reviewer` dalam konteks baru, dengan cara yang tertulis di bagian "Menjalankan agen peran" pada berkas instruksi proyek. Brief hanya berisi lima baris ini, tanpa ringkasan, tanpa latar belakang, tanpa pendapatmu:
 
    ```
    Gate: <gate>
@@ -38,7 +38,7 @@ Pada gate `tickets`, reviewer tidak diberi `prd.md` atau `specs/`. Ia harus bisa
 
    Jangan melanjutkan percakapan reviewer sebelumnya dan jangan memberinya temuan putaran lalu. Reviewer yang mewarisi konteks bukan lagi ikan mas. Setelah selesai, kembali ke langkah 1.
 
-3. Panggil subagent penulis gate itu dengan brief: folder epic, skill yang dijalankan, dan path berkas review yang harus dijawab. Setelah selesai, kembali ke langkah 1.
+3. Jalankan agen peran penulis gate itu dengan brief: folder epic, skill yang dijalankan, dan path berkas review yang harus dijawab. Setelah selesai, kembali ke langkah 1.
 
 4. Saat status `berhenti`, tampilkan temuan putaran terakhir kepada operator dan minta arahan. Setelah operator memberi arahan, panggil penulis dengan arahan itu, jalankan `reopen <epic> <gate>`, lalu mulai lagi dari langkah 1.
 

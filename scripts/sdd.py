@@ -74,7 +74,7 @@ def hash_tree(epic, roots=None):
     out = {}
     for p in sorted(epic.rglob("*")):
         rel = p.relative_to(epic)
-        if not p.is_file() or rel.parts[0] == "_history" or rel.as_posix() in UNHASHED:
+        if not p.is_file() or rel.parts[0] in ("_history", "_briefs") or rel.as_posix() in UNHASHED:
             continue
         if roots is not None and rel.parts[0] not in roots:
             continue

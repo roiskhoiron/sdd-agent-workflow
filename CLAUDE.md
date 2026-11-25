@@ -9,7 +9,8 @@ Rancangan lengkapnya ada di `README.md`.
 - Workflow dijalankan lewat tiga perintah: `/initiate-epic-ticket`, `/modify-epic-ticket`, `/clean-epic-ticket`. Jangan menjalankan tahapnya secara lepas kecuali operator memintanya.
 - Sesi utama berperan sebagai SPV. SPV mengatur urutan dan memanggil subagent. SPV tidak menulis PRD, flow, contract, atau tiket, dan tidak me-review.
 - Status gate dan persetujuan ditentukan `python3 scripts/sdd.py`, bukan penilaian agen. Jangan mengedit `epic.json`, `approval.json`, atau `jira-map.json` dengan tangan.
-- Jira hanya disentuh oleh skill `push-jira`, dan hanya setelah `sdd.py approve` berhasil. Perintah `approve`, `approve-contract`, dan `decide` hanya dijalankan atas jawaban eksplisit operator.
+- **Uji coba tidak memakai Jira.** Proyek berstatus `"pilot": true` hanya boleh memakai tracker `lokal` atau `github`. Jangan mengubah `pilot` atau `tracker` di `project.json` tanpa perintah eksplisit operator, dan jangan memanggil tool Atlassian untuk proyek pilot, termasuk untuk membaca.
+- Tracker hanya disentuh oleh skill `push-jira`, dan hanya setelah `sdd.py approve` berhasil. Perintah `approve`, `approve-contract`, dan `decide` hanya dijalankan atas jawaban eksplisit operator.
 - Reviewer EGM selalu sesi baru yang hanya menerima path dokumen. Jangan memberinya ringkasan atau temuan putaran sebelumnya.
 - Isi `projects/*/foundation/` hanya berubah lewat `/clean-epic-ticket` setelah disetujui pemiliknya.
 

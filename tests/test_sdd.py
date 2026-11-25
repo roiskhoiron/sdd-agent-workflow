@@ -52,11 +52,17 @@ foundation/design-system.md
 class Workflow(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.epic = Path(self.tmp.name) / "epic"
+        self.project = Path(self.tmp.name) / "proyek"
+        self.epic = self.project / "epics" / "epic"
+        self.epic.parent.mkdir(parents=True)
+        self.set_tracker("lokal", pilot=True)
         self.run_ok("init", "--title", "Kirim foto")
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def set_tracker(self, kind, pilot):
+        (self.project / "project.json").write_text(json.dumps({"pilot": pilot, "tracker": {"type": kind}}))
 
     def sdd(self, cmd, *args):
         return subprocess.run([sys.executable, str(SDD), cmd, str(self.epic), *args],
@@ -178,6 +184,20 @@ class Workflow(unittest.TestCase):
         self.run_ok("verify-approval")
 
     # ---- push ----
+
+    def test_pilot_project_can_never_push_to_jira(self):
+        self.small_epic_ready()
+        self.run_ok("approve", "--by", "Rois")
+        self.set_tracker("jira", pilot=True)
+        r = self.sdd("pending-push")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("dilarang memakai Jira", r.stderr)
+        (self.project / "project.json").write_text(json.dumps({"tracker": {"type": "jira"}}))
+        self.assertEqual(self.sdd("pending-push").returncode, 2, "tanpa kunci pilot harus dianggap pilot")
+        self.set_tracker("jira", pilot=False)
+        self.assertIn("tujuan\tjira", self.run_ok("pending-push"))
+        self.set_tracker("github", pilot=True)
+        self.assertIn("tujuan\tgithub", self.run_ok("pending-push"))
 
     def test_only_changed_tickets_are_pushed_again(self):
         self.small_epic_ready()

@@ -8,7 +8,7 @@ Cakupan saat ini adalah tiket role Mobile. Pekerjaan role lain dicatat sebagai k
 
 ## Memulai
 
-1. Buka repo ini di Claude Code dengan konektor Atlassian tersambung.
+1. Buka repo ini di Claude Code. Konektor Atlassian hanya dibutuhkan untuk proyek bertracker `jira`.
 2. Jalankan `/initiate-epic-ticket <proyek> <deskripsi kebutuhan>`. Pada pemakaian pertama, perintah ini membuat `projects/<proyek>/` dari template lalu berhenti.
 3. Isi `projects/<proyek>/project.json` dan enam dokumen di `projects/<proyek>/foundation/`.
 4. Jalankan lagi perintah yang sama.
@@ -18,6 +18,18 @@ Supaya tidak diminta izin setiap kali skrip penjaga berjalan, tambahkan sendiri 
 ```json
 { "permissions": { "allow": ["Bash(python3 scripts/sdd.py:*)"] } }
 ```
+
+## Tracker dan aturan pilot
+
+Tujuan tiket ditentukan `tracker.type` di `project.json`:
+
+| Nilai | Tiket masuk ke | Dipakai untuk |
+| --- | --- | --- |
+| `lokal` | Berkas di `projects/<proyek>/tracker-lokal/` | Uji coba tanpa layanan luar. Ini nilai awal. |
+| `github` | Issues di repo `tracker.github_repo` | Uji coba dengan tracker nyata |
+| `jira` | Proyek Jira di bagian `jira` | Pemakaian sungguhan |
+
+**Uji coba tidak boleh memakai Jira.** Proyek baru dibuat dengan `"pilot": true`, dan skrip menolak membuat rencana push bila proyek pilot diarahkan ke Jira. Proyek tanpa kunci `pilot` dianggap pilot. Hanya pemilik proyek yang menyetel `"pilot": false`.
 
 ## Tiga perintah
 
@@ -106,7 +118,7 @@ Draft meninggalkan beberapa hal terbuka. Implementasi ini memilih nilai awal ber
 | Pemilik manusia | Belum diisi | `owners` di `project.json` |
 | Ukuran sedang | Tetap menulis PRD, dibatasi setengah halaman | Skill `size-epic` dan `write-prd` |
 | Pembaruan Foundation | Diterapkan langsung setelah disetujui, tanpa tiket tersendiri | Skill `clean-epic-ticket` |
-| Akses Jira | Hanya sesi utama, subagent tidak menyentuh Jira | Skill `push-jira` |
+| Akses tracker | Hanya sesi utama, subagent tidak menyentuh tracker | Skill `push-jira` |
 | Konvensi kode mobile dan konfigurasi environment | Tautan di `references`, bukan dokumen Foundation ketujuh | `project.json` |
 
 ## Belum dikerjakan

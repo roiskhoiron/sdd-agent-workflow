@@ -1,6 +1,11 @@
 {
   "name": "ISI: nama proyek",
   "platforms": ["android", "ios"],
+  "pilot": true,
+  "tracker": {
+    "type": "lokal",
+    "github_repo": "ISI jika type github: pemilik/nama-repo"
+  },
   "jira": {
     "site": "ISI: alamat situs, misalnya nama.atlassian.net",
     "project_key": "ISI",

@@ -17,9 +17,9 @@ Rantai: `audit-epic` → `sync-foundation` → `request-approval` → `push-jira
 
 Cari epic seperti di `/modify-epic-ticket`. Jika operator tidak menyebut alasannya, tanyakan: selesai atau dibatalkan.
 
-## 2. Ambil keadaan Jira
+## 2. Ambil keadaan tracker
 
-Dengan tool Atlassian, ambil semua issue di bawah epic Jira: kode, judul, status, dan link. Simpan ke `<epic>/jira-snapshot.json` sebagai daftar objek `{ "key", "summary", "status", "links" }`. Langkah ini hanya membaca Jira.
+Baca `tracker.type` di `project.json` dan ambil semua tiket di bawah epic dari tujuan itu: kode, judul, status, dan ketergantungan. Simpan ke `<epic>/jira-snapshot.json` sebagai daftar objek `{ "key", "summary", "status", "links" }`. Langkah ini hanya membaca. Pada proyek pilot, jangan membuka Jira sama sekali.
 
 ## 3. Audit
 

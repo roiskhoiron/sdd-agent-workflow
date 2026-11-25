@@ -368,9 +368,29 @@ def cmd_verify_approval(epic, args):
     return 1 if problem else 0
 
 
-# ---------- push Jira ----------
+# ---------- push ke tracker ----------
+
+TRACKERS = ("lokal", "github", "jira")
+
+
+def tracker_of(epic):
+    """Baca tujuan tiket dari project.json. Proyek pilot tidak pernah boleh menulis ke Jira."""
+    path = epic.resolve().parent.parent / "project.json"
+    if not path.exists():
+        raise Fail(f"project.json tidak ditemukan di {path.parent}, tujuan tiket tidak diketahui")
+    cfg = load(path)
+    kind = cfg.get("tracker", {}).get("type")
+    if kind not in TRACKERS:
+        raise Fail(f"tracker.type di project.json harus salah satu dari {TRACKERS}")
+    # Tanpa keterangan, proyek dianggap pilot: lebih aman salah menolak daripada salah menulis ke Jira.
+    if cfg.get("pilot", True) and kind == "jira":
+        raise Fail("proyek ini pilot dan tracker-nya Jira. Uji coba dilarang memakai Jira: "
+                   "pakai tracker 'lokal' atau 'github', atau minta pemilik proyek menyetel \"pilot\": false")
+    return kind
+
 
 def cmd_pending_push(epic, args):
+    kind = tracker_of(epic)
     problem = approval_problem(epic)
     if problem:
         raise Fail(f"tidak boleh push, {problem}")
@@ -384,6 +404,7 @@ def cmd_pending_push(epic, args):
         elif entry["hash"] != sha(path):
             plan.append(("ubah", name, entry["key"]))
     plan += [("tutup", name, e["key"]) for name, e in pushed.items() if name not in tickets and not e.get("closed")]
+    print(f"tujuan\t{kind}")
     for action, name, key in plan:
         print(f"{action}\t{name}\t{key}")
     if not plan:

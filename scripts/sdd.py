@@ -3,7 +3,8 @@
 
 Skrip ini memegang aturan yang tidak boleh bergantung pada ingatan agen:
 status gate EGM, batas revisi, keputusan manusia atas temuan, persetujuan
-akhir, dan daftar tiket yang boleh dikirim ke Jira. Hanya pustaka standar.
+akhir, pilihan platform di memory project, dan daftar tiket yang boleh dikirim ke
+papan kanban. Hanya pustaka standar.
 
 Pemakaian: python3 scripts/sdd.py <perintah> <folder-epic> [opsi]
 """
@@ -29,13 +30,14 @@ MAX_ROUNDS = 3  # satu review awal ditambah dua revisi
 RESPONSES = ("diperbaiki", "ditolak", "diteruskan")
 FINDING_TYPES = ("tidak-jelas", "bertentangan", "hilang")
 # Berkas status tidak ikut di-hash: isinya berubah justru karena persetujuan dan push.
-UNHASHED = {"epic.json", "approval.json", "jira-map.json", "jira-snapshot.json"}
+UNHASHED = {"epic.json", "approval.json", "board-map.json", "board-snapshot.json"}
 MOBILE_SECTIONS = (
     "Tujuan", "Ruang lingkup", "Layar dan flow", "API contract", "Aturan sisi klien",
     "Keamanan sisi klien", "Acceptance criteria", "Rujukan Foundation", "Ketergantungan",
 )
 ALWAYS_FILLED = {1, 2, 7}  # bagian lain boleh 'Tidak ada', tetapi tidak boleh kosong
-JIRA_KEY = re.compile(r"^[A-Z][A-Z0-9]+-\d+$")
+# Kode tiket yang sudah ada di papan: PROJ-12 (Jira), #34 atau repo#34 (GitHub), LOKAL-5.
+BOARD_KEY = re.compile(r"^([A-Z][A-Z0-9]+-\d+|([\w.-]+/)?[\w.-]*#\d+)$")
 
 
 class Fail(Exception):
@@ -199,7 +201,8 @@ def parse_ticket(path):
     for line in m.group(1).splitlines():
         if ":" in line:
             k, v = line.split(":", 1)
-            meta[k.strip()] = v.split("#")[0].strip()
+            # Komentar hanya " # ...", supaya kode tiket GitHub seperti #45 tetap terbaca.
+            meta[k.strip()] = re.split(r"\s#\s", v)[0].strip()
     return meta, m.group(2)
 
 
@@ -216,13 +219,13 @@ def lint_ticket(path, tickets, manifest, errors):
     meta, body = parse_ticket(path)
     err = lambda msg: errors.append(f"{path.name}: {msg}")
     kind, size = meta.get("kind"), meta.get("size")
-    if kind not in ("role", "contract"):
-        err("'kind' harus role atau contract")
+    if kind not in ("role", "contract", "design"):
+        err("'kind' harus role, contract, atau design")
     if size not in SIZES:
         err(f"'size' harus salah satu dari {SIZES}")
     for b in blockers(meta):
-        if b not in tickets and not JIRA_KEY.match(b):
-            err(f"blocked_by '{b}' bukan berkas tiket di epic ini dan bukan kode Jira")
+        if b not in tickets and not BOARD_KEY.match(b):
+            err(f"blocked_by '{b}' bukan berkas tiket di epic ini dan bukan kode tiket di papan")
     if not re.search(r"^# \S", body, re.M):
         err("tidak punya judul '# ...'")
     if kind != "role":
@@ -237,6 +240,9 @@ def lint_ticket(path, tickets, manifest, errors):
             parse_ticket(tickets[b])[0].get("kind") == "contract" for b in blockers(meta) if b in tickets
         ):
             err("contract berubah di epic ini, tiket wajib blocked_by tiket contract")
+    designs = [n for n, p in tickets.items() if parse_ticket(p)[0].get("kind") == "design"]
+    if designs and not set(designs) & set(blockers(meta)):
+        err(f"epic ini punya tiket desain ({', '.join(designs)}), tiket role wajib blocked_by tiket desain")
     if meta.get("role") != "mobile":
         err("baru role mobile yang punya template, role lain ditulis sebagai catatan lintas role")
         return
@@ -368,33 +374,91 @@ def cmd_verify_approval(epic, args):
     return 1 if problem else 0
 
 
-# ---------- push ke tracker ----------
+# ---------- memory project dan papan ----------
 
-TRACKERS = ("lokal", "github", "jira")
+MEMORY = "sdd.json"
+BOARDS = ("github-projects", "jira", "lokal")
+DOCS = ("repo", "claude-docs", "confluence", "notion")
+DESIGNS = ("figcraft", "figma", "claude-design")
+CHOICES = {"board.platform": BOARDS, "docs.platform": DOCS, "design.platform": DESIGNS}
+# Kunci yang hanya boleh diubah manusia dengan mengedit sdd.json sendiri.
+HUMAN_ONLY = {"pilot"}
 
 
-def tracker_of(epic):
-    """Baca tujuan tiket dari project.json. Proyek pilot tidak pernah boleh menulis ke Jira."""
-    path = epic.resolve().parent.parent / "project.json"
-    if not path.exists():
-        raise Fail(f"project.json tidak ditemukan di {path.parent}, tujuan tiket tidak diketahui")
-    cfg = load(path)
-    kind = cfg.get("tracker", {}).get("type")
-    if kind not in TRACKERS:
-        raise Fail(f"tracker.type di project.json harus salah satu dari {TRACKERS}")
+def find_memory(start):
+    """Cari sdd.json dari folder ini ke atas. Folder tempatnya ditemukan adalah akar proyek."""
+    here = Path(start).resolve()
+    for d in (here, *here.parents):
+        if (d / MEMORY).exists():
+            return d / MEMORY
+    raise Fail(f"{MEMORY} tidak ditemukan dari {here} ke atas. Jalankan setup-board lebih dulu.")
+
+
+def pilot_jira(cfg):
     # Tanpa keterangan, proyek dianggap pilot: lebih aman salah menolak daripada salah menulis ke Jira.
-    if cfg.get("pilot", True) and kind == "jira":
-        raise Fail("proyek ini pilot dan tracker-nya Jira. Uji coba dilarang memakai Jira: "
-                   "pakai tracker 'lokal' atau 'github', atau minta pemilik proyek menyetel \"pilot\": false")
+    return cfg.get("pilot", True) is not False and cfg.get("board", {}).get("platform") == "jira"
+
+
+PILOT_JIRA = ("proyek ini pilot dan papannya Jira. Uji coba dilarang memakai Jira: pakai "
+              "'github-projects' atau 'lokal', atau minta pemilik proyek menyetel \"pilot\": false di sdd.json")
+
+
+def board_of(epic):
+    """Baca platform papan dari memory project. Proyek pilot tidak pernah boleh menulis ke Jira."""
+    cfg = load(find_memory(epic))
+    kind = cfg.get("board", {}).get("platform")
+    if kind not in BOARDS:
+        raise Fail(f"board.platform di {MEMORY} belum dipilih. Jalankan setup-board. Pilihan: {BOARDS}")
+    if pilot_jira(cfg):
+        raise Fail(PILOT_JIRA)
     return kind
 
 
+def cmd_remember(root, args):
+    """Simpan satu pilihan ke memory project (sdd.json), misalnya board.platform."""
+    path = Path(root) / MEMORY
+    cfg = load(path, {})
+    if args.key.split(".")[0] in HUMAN_ONLY:
+        raise Fail(f"'{args.key}' hanya boleh diubah manusia dengan mengedit {MEMORY} sendiri")
+    allowed = CHOICES.get(args.key)
+    if allowed and args.value not in allowed:
+        raise Fail(f"{args.key} harus salah satu dari {allowed}")
+    try:
+        value = json.loads(args.value)
+    except json.JSONDecodeError:
+        value = args.value
+    target = cfg
+    parts = args.key.split(".")
+    for part in parts[:-1]:
+        target = target.setdefault(part, {})
+        if not isinstance(target, dict):
+            raise Fail(f"{args.key}: '{part}' bukan objek")
+    target[parts[-1]] = value
+    if pilot_jira(cfg):
+        raise Fail(PILOT_JIRA)
+    save(path, cfg)
+    print(f"tercatat di {path}: {args.key} = {json.dumps(value, ensure_ascii=False)}")
+    return 0
+
+
+def cmd_memory(root, args):
+    """Tampilkan memory project dan pilihan yang belum dibuat."""
+    path = Path(root) / MEMORY
+    cfg = load(path, {})
+    for key in CHOICES:
+        section, name = key.split(".")
+        value = cfg.get(section, {}).get(name)
+        print(f"{key}: {value if value else 'BELUM DIPILIH'}")
+    print(f"pilot: {cfg.get('pilot', True) is not False}")
+    return 0
+
+
 def cmd_pending_push(epic, args):
-    kind = tracker_of(epic)
+    kind = board_of(epic)
     problem = approval_problem(epic)
     if problem:
         raise Fail(f"tidak boleh push, {problem}")
-    pushed = load(epic / "jira-map.json", {})
+    pushed = load(epic / "board-map.json", {})
     tickets = ticket_files(epic)
     plan = []
     for name, path in tickets.items():
@@ -413,7 +477,7 @@ def cmd_pending_push(epic, args):
 
 
 def cmd_record_push(epic, args):
-    pushed = load(epic / "jira-map.json", {})
+    pushed = load(epic / "board-map.json", {})
     path = epic / "tickets" / f"{args.ticket}.md"
     if args.closed:
         if args.ticket not in pushed:
@@ -423,7 +487,7 @@ def cmd_record_push(epic, args):
         if not path.exists():
             raise Fail(f"tiket tidak ditemukan: {path}")
         pushed[args.ticket] = {"key": args.key, "hash": sha(path), "at": now()}
-    save(epic / "jira-map.json", pushed)
+    save(epic / "board-map.json", pushed)
     print(f"tercatat: {args.ticket} -> {args.key}")
     return 0
 
@@ -448,17 +512,17 @@ def cmd_set_size(epic, args):
     return 0
 
 
-def cmd_set_jira(epic, args):
+def cmd_set_board_epic(epic, args):
     state = epic_state(epic)
-    state["jira_epic"] = args.key
+    state["board_epic"] = args.key
     save(epic / "epic.json", state)
-    print(f"epic Jira: {args.key}")
+    print(f"epic di papan: {args.key}")
     return 0
 
 
 def cmd_status(epic, args):
     state = epic_state(epic)
-    print(f"{state['title']} | ukuran: {state.get('size') or 'belum ditetapkan'} | Jira: {state.get('jira_epic', '-')}")
+    print(f"{state['title']} | ukuran: {state.get('size') or 'belum ditetapkan'} | papan: {state.get('board_epic', '-')}")
     if state.get("size") in SIZES:
         for gate in required_gates(state):
             print(f"  gate {gate}: {gate_status(epic, gate, state)[0]}")
@@ -474,16 +538,19 @@ def main(argv=None):
 
     def add(name, fn, *opts):
         p = sub.add_parser(name, help=fn.__doc__)
-        p.add_argument("epic", type=Path)
+        p.add_argument("epic", type=Path, metavar="folder",
+                       help="folder epic, atau akar proyek untuk memory dan remember")
         for flags, kw in opts:
             p.add_argument(*flags, **kw)
         p.set_defaults(fn=fn)
 
     gate = (("gate",), {"choices": GATES})
     by = (("--by",), {"required": True, "help": "nama manusia yang memutuskan"})
+    add("memory", cmd_memory)
+    add("remember", cmd_remember, (("key",), {}), (("value",), {}))
     add("init", cmd_init, (("--title",), {"required": True}))
     add("set-size", cmd_set_size, (("size",), {"choices": SIZES}))
-    add("set-jira", cmd_set_jira, (("key",), {}))
+    add("set-board-epic", cmd_set_board_epic, (("key",), {}))
     add("status", cmd_status)
     add("gate", cmd_gate, gate)
     add("reopen", cmd_reopen, gate)

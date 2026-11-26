@@ -52,17 +52,20 @@ foundation/design-system.md
 class Workflow(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.project = Path(self.tmp.name) / "proyek"
-        self.epic = self.project / "epics" / "epic"
+        self.project = Path(self.tmp.name) / "repo"
+        self.epic = self.project / "docs" / "epics" / "epic"
         self.epic.parent.mkdir(parents=True)
-        self.set_tracker("lokal", pilot=True)
+        self.set_board("lokal", pilot=True)
         self.run_ok("init", "--title", "Kirim foto")
 
     def tearDown(self):
         self.tmp.cleanup()
 
-    def set_tracker(self, kind, pilot):
-        (self.project / "project.json").write_text(json.dumps({"pilot": pilot, "tracker": {"type": kind}}))
+    def set_board(self, kind, pilot):
+        (self.project / "sdd.json").write_text(json.dumps({"pilot": pilot, "board": {"platform": kind}}))
+
+    def memory_cmd(self, *args):
+        return subprocess.run([sys.executable, str(SDD), *args], capture_output=True, text=True)
 
     def sdd(self, cmd, *args):
         return subprocess.run([sys.executable, str(SDD), cmd, str(self.epic), *args],
@@ -188,16 +191,42 @@ class Workflow(unittest.TestCase):
     def test_pilot_project_can_never_push_to_jira(self):
         self.small_epic_ready()
         self.run_ok("approve", "--by", "Rois")
-        self.set_tracker("jira", pilot=True)
+        self.set_board("jira", pilot=True)
         r = self.sdd("pending-push")
         self.assertEqual(r.returncode, 2)
         self.assertIn("dilarang memakai Jira", r.stderr)
-        (self.project / "project.json").write_text(json.dumps({"tracker": {"type": "jira"}}))
+        (self.project / "sdd.json").write_text(json.dumps({"board": {"platform": "jira"}}))
         self.assertEqual(self.sdd("pending-push").returncode, 2, "tanpa kunci pilot harus dianggap pilot")
-        self.set_tracker("jira", pilot=False)
+        self.set_board("jira", pilot=False)
         self.assertIn("tujuan\tjira", self.run_ok("pending-push"))
-        self.set_tracker("github", pilot=True)
-        self.assertIn("tujuan\tgithub", self.run_ok("pending-push"))
+        self.set_board("github-projects", pilot=True)
+        self.assertIn("tujuan\tgithub-projects", self.run_ok("pending-push"))
+
+    def test_unchosen_board_blocks_push(self):
+        self.small_epic_ready()
+        self.run_ok("approve", "--by", "Rois")
+        (self.project / "sdd.json").write_text(json.dumps({"pilot": True, "board": {"platform": None}}))
+        r = self.sdd("pending-push")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("setup-board", r.stderr)
+
+    # ---- memory project ----
+
+    def test_remember_records_choices_and_guards_pilot(self):
+        root = str(self.project)
+        (self.project / "sdd.json").unlink()
+        self.assertIn("board.platform: BELUM DIPILIH", self.memory_cmd("memory", root).stdout)
+        r = self.memory_cmd("remember", root, "board.platform", "github-projects")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.memory_cmd("remember", root, "board.status_map", '{"siap": "Todo", "selesai": "Done"}')
+        cfg = json.loads((self.project / "sdd.json").read_text())
+        self.assertEqual(cfg["board"], {"platform": "github-projects", "status_map": {"siap": "Todo", "selesai": "Done"}})
+        self.assertIn("harus salah satu", self.memory_cmd("remember", root, "board.platform", "trello").stderr)
+        self.assertIn("hanya boleh diubah manusia", self.memory_cmd("remember", root, "pilot", "false").stderr)
+        r = self.memory_cmd("remember", root, "board.platform", "jira")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("dilarang memakai Jira", r.stderr)
+        self.assertEqual(json.loads((self.project / "sdd.json").read_text())["board"]["platform"], "github-projects")
 
     def test_only_changed_tickets_are_pushed_again(self):
         self.small_epic_ready()
@@ -252,11 +281,20 @@ class Workflow(unittest.TestCase):
         self.ticket(version="1.1.0", api="GET /messages")
         self.assertIn("wajib blocked_by tiket contract", self.lint_errors())
 
+    def test_design_ticket_must_block_role_tickets(self):
+        (self.epic / "tickets" / "design-01.md").write_text(
+            "---\nkind: design\nrole: ui-ux\nsize: besar\nblocked_by: tidak ada\n---\n# [KODE-TIKET] Prototipe layar favorit\n")
+        self.ticket()
+        self.assertIn("wajib blocked_by tiket desain", self.lint_errors())
+        self.ticket(blocked="design-01")
+        self.assertIn("lint: bersih", self.lint_errors())
+
     def test_unknown_blocker_fails_lint(self):
         self.ticket(blocked="backend-07")
         self.assertIn("blocked_by 'backend-07'", self.lint_errors())
-        self.ticket(blocked="BC-120")
-        self.assertIn("lint: bersih", self.lint_errors())
+        for key in ("BC-120", "#45", "codingskuy/chefgenie#45"):
+            self.ticket(blocked=key)
+            self.assertIn("lint: bersih", self.lint_errors(), key)
 
 
 if __name__ == "__main__":

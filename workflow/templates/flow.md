@@ -1,6 +1,10 @@
-# Flow dan mockup: [judul]
+# Flow dan prototipe: [judul]
 
-Mockup: [tautan Figma atau Claude Design, atau "wireframe teks di bawah"]
+Platform desain: [design.platform di sdd.json]
+Prototipe atau mockup: [tautan berkas desain, atau "wireframe teks di bawah"]
+
+## Perlu tiket desain?
+Ya atau tidak, dengan alasan. Ya jika epic butuh komponen baru di design system atau banyak layar baru. Jika ya, flow ini bukan desain final: workflow UI/UX yang membuat prototipe dan halaman handover.
 
 ## Daftar layar
 | Layar | Tujuan | Masuk dari | Keluar ke |

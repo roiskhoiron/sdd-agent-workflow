@@ -16,7 +16,7 @@ Baca `intake.md` di folder epic, lalu usulkan satu ukuran dengan alasan satu kal
 
 Dua pertanyaan yang memutuskan: apakah pekerjaan ini menyentuh lebih dari satu role, dan apakah butuh endpoint baru atau perubahan contract? Jika salah satu jawabannya ya, ukurannya besar. Jika kamu ragu di antara dua ukuran, usulkan yang lebih besar.
 
-Untuk memeriksa endpoint, baca `foundation/katalog-contract.md`. Jangan membaca Foundation lain.
+Untuk memeriksa endpoint, baca `docs/contracts/katalog.md`. Jangan membaca Foundation lain.
 
 Ukuran adalah keputusan operator. Tanyakan kepada operator dengan usulanmu sebagai pilihan pertama (pakai fitur pertanyaan pilihan bila alatmu punya), lalu catat jawabannya:
 

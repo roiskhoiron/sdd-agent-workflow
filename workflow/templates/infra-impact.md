@@ -1,6 +1,6 @@
 # Dampak infrastruktur: [judul]
 
-Hanya perubahan terhadap `foundation/infrastruktur.md`. Tulis "Tidak ada dampak" jika kosong.
+Hanya perubahan terhadap `docs/foundation/infrastruktur.md`. Tulis "Tidak ada dampak" jika kosong.
 
 ## Perubahan
 Layanan baru, variabel environment, secret, kapasitas, aturan jaringan.

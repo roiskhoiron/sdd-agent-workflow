@@ -60,9 +60,10 @@ class Installer(unittest.TestCase):
             if p.suffix == ".toml" and tomllib:
                 tomllib.loads(text)
         for skills in (".claude", ".agents", ".gemini", ".opencode", ".cursor", ".github", ".sdd"):
-            self.assertEqual(len(list((self.proj / skills / "skills").glob("*/SKILL.md"))), 14, skills)
+            self.assertEqual(len(list((self.proj / skills / "skills").glob("*/SKILL.md"))), 17, skills)
         self.assertTrue((self.proj / ".sdd" / "scripts" / "sdd.py").exists())
-        self.assertTrue((self.proj / "projects").is_dir())
+        for board in ("github-projects", "jira", "lokal"):
+            self.assertTrue((self.proj / ".sdd" / "workflow" / "boards" / f"{board}.md").exists())
 
     def test_non_claude_skills_drop_claude_only_fields_and_arguments(self):
         self.install("claude,codex")
@@ -103,6 +104,9 @@ class Installer(unittest.TestCase):
 
     def test_uninstall_keeps_user_content_and_other_tools(self):
         (self.proj / "AGENTS.md").write_text("# Aturan tim\n")
+        (self.proj / "sdd.json").write_text("{}\n")
+        (self.proj / "docs/epics/x").mkdir(parents=True)
+        (self.proj / "docs/epics/x/prd.md").write_text("prd\n")
         self.install("codex,opencode,claude")
         self.run_installer("--uninstall", "--agent", "codex", "--target", str(self.proj))
         agents_md = (self.proj / "AGENTS.md").read_text()
@@ -115,7 +119,8 @@ class Installer(unittest.TestCase):
         self.assertFalse((self.proj / "CLAUDE.md").exists())
         self.assertFalse((self.proj / ".sdd").exists())
         self.assertFalse((self.proj / ".claude").exists())
-        self.assertTrue((self.proj / "projects").is_dir(), "folder kerja pengguna tidak boleh dihapus")
+        self.assertEqual((self.proj / "sdd.json").read_text(), "{}\n", "memory project tidak boleh dihapus")
+        self.assertTrue((self.proj / "docs/epics/x/prd.md").exists(), "dokumen pengguna tidak boleh dihapus")
 
     def test_global_scope_writes_only_under_home(self):
         self.install("claude,codex,gemini,opencode,cursor,copilot", "global")
@@ -129,6 +134,20 @@ class Installer(unittest.TestCase):
         self.assertIn(f"python3 {core}/scripts/sdd.py", claude_md)
         self.assertTrue((core / "instructions/cursor.md").exists(), "Cursor tidak punya berkas aturan global")
 
+    def test_product_designer_is_not_tool_restricted(self):
+        self.install("claude,copilot")
+        claude = (self.proj / ".claude/agents/product-designer.md").read_text()
+        copilot = (self.proj / ".github/agents/product-designer.agent.md").read_text()
+        self.assertNotIn("tools:", claude.split("---")[1], "butuh tool MCP platform desain")
+        self.assertNotIn("tools:", copilot.split("---")[1])
+        self.assertIn("tools:", (self.proj / ".claude/agents/pdm.md").read_text())
+
+    def test_invoke_hint_has_no_project_argument(self):
+        self.install("codex")
+        text = (self.proj / "AGENTS.md").read_text()
+        self.assertIn("$initiate-epic-ticket <kebutuhan>", text)
+        self.assertNotIn("<proyek>", text)
+
     def test_headless_mode_points_to_role_prompts(self):
         self.install("codex", "project", 0, "--role-mode", "headless")
         self.assertFalse((self.proj / ".codex/agents").exists())
@@ -140,7 +159,7 @@ class Installer(unittest.TestCase):
 
     def test_installed_guard_script_runs(self):
         self.install("generic")
-        epic = self.proj / "projects/contoh/epics/satu"
+        epic = self.proj / "docs/epics/satu"
         r = subprocess.run([sys.executable, str(self.proj / ".sdd/scripts/sdd.py"), "init", str(epic),
                             "--title", "Uji"], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)

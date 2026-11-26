@@ -17,7 +17,7 @@ Apa yang bisa dilakukan pengguna setelah ini, yang sebelumnya tidak bisa.
 - Platform:
 
 ## Tautan pendukung
-Mockup, tiket lama, percakapan, dokumen.
+Prototipe atau mockup, tiket lama, percakapan, dokumen.
 
 ## Jawaban atas pertanyaan PdM
 Diisi jika PdM mengembalikan pertanyaan terbuka.

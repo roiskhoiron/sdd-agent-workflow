@@ -20,7 +20,7 @@ Untuk tiap dokumen, jawab: apakah perubahan ini mengubah isinya? Jika ya, bagian
 - Perubahan field, endpoint, kode error, atau aturan validasi mengenai contract. Contract yang berubah menaikkan versi, dan semua tiket yang mencatat versi lama ikut terdampak.
 - Perubahan scope mengenai `prd.md` dan hampir semua yang di bawahnya.
 
-Untuk tiket, bandingkan dengan `jira-map.json` supaya jelas mana yang sudah ada di tracker.
+Untuk tiket, bandingkan dengan `board-map.json` supaya jelas mana yang sudah ada di papan.
 
 Isi berkas keluaran:
 
@@ -35,7 +35,7 @@ Kalimat operator apa adanya.
 | --- | --- | --- | --- |
 
 ## Tiket terdampak
-| Tiket | Kode Jira | Tindakan (ubah, buat, hapus) | Alasan |
+| Tiket | Kode di papan | Tindakan (ubah, buat, hapus) | Alasan |
 | --- | --- | --- | --- |
 
 ## Tidak terdampak

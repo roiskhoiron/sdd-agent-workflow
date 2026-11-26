@@ -28,7 +28,7 @@ Tanpa opsi, pemasang bertanya langkah demi langkah.
   --agent LIST        alat yang dipasang, dipisah koma:
                       claude, codex, gemini, opencode, cursor, copilot, generic
   --scope SCOPE       project (hanya satu folder proyek) atau global (semua proyek)
-  --target DIR        folder proyek untuk scope project (default: folder sekarang)
+  --target DIR        akar repo proyek untuk scope project (default: folder sekarang)
   --role-mode MODE    native (subagent bawaan alat) atau headless (proses baru)
   --headless-cmd CMD  perintah sekali jalan untuk agen "generic", misal 'aider --message "<prompt>"'
   --yes, -y           jangan bertanya, pakai nilai yang diberikan
@@ -139,8 +139,8 @@ case "$SCOPE" in project|global) ;; *) die "--scope harus project atau global" ;
 
 if [ "$SCOPE" = project ] && [ -z "$TARGET" ]; then
   if [ -n "$TTY" ]; then
-    bold "3. Folder proyek"
-    info "  Folder tempat dokumen spesifikasi dan tiket akan ditulis." >/dev/tty
+    bold "3. Repo proyek"
+    info "  Akar repo proyekmu. Di sini sdd.json (memory project) dan folder docs/ akan dibuat." >/dev/tty
     ask "Folder" "$PWD"
     TARGET="$REPLY"
   else
@@ -181,10 +181,11 @@ if [ "$status" -eq 0 ] || [ "$status" -eq 3 ]; then
   if [ "$SCOPE" = project ]; then
     info "  1. Buka $TARGET dengan coding agent pilihanmu."
   else
-    info "  1. Buka folder kerja spesifikasimu dengan coding agent pilihanmu."
+    info "  1. Buka repo proyekmu dengan coding agent pilihanmu."
   fi
-  info "  2. Jalankan initiate-epic-ticket dengan nama proyek dan kebutuhan."
-  info "     Cara memanggilnya per alat ada di README, bagian \"Cara memanggil perintah\"."
-  info "  3. Isi project.json dan foundation/ yang dibuat, lalu jalankan perintah yang sama lagi."
+  info "  2. Jalankan initiate-epic-ticket dengan deskripsi kebutuhan."
+  info "     Cara memanggilnya per alat ada di README, bagian \"Alat yang didukung\"."
+  info "  3. Pertama kali, agen menanyakan papan kanban, platform dokumen, dan platform desain,"
+  info "     lalu membuat docs/foundation/. Isi Foundation, lalu jalankan perintah yang sama lagi."
 fi
 exit "$status"

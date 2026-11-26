@@ -6,7 +6,7 @@ user-invocable: false
 
 # Review gate EGM
 
-Brief memberimu lima hal: nama gate, folder proyek, dokumen yang diuji, rujukan yang boleh dibaca, dan lokasi berkas hasil. Baca dokumen yang diuji sampai habis sebelum membuka rujukan.
+Brief memberimu lima hal: nama gate, akar proyek, dokumen yang diuji, rujukan yang boleh dibaca, dan lokasi berkas hasil. Baca dokumen yang diuji sampai habis sebelum membuka rujukan.
 
 ## Pertanyaan per gate
 
@@ -27,6 +27,7 @@ Setiap gate punya satu pertanyaan utama. Daftar di bawahnya adalah cara mengujin
 - Apakah setiap acceptance criteria di PRD bisa ditelusuri ke layar atau langkah flow?
 - Adakah layar yang tidak bisa dicapai atau tidak punya jalan keluar?
 - Adakah komponen yang tidak ada di design system dan tidak dicatat sebagai komponen baru?
+- Apakah jawaban "Perlu tiket desain?" punya alasan, dan konsisten dengan jumlah komponen dan layar baru?
 
 **Gate `contract`: contract cocok dengan mockup?**
 
@@ -47,6 +48,7 @@ Uji tiap tiket seolah kamu yang harus mengerjakannya besok, hanya dengan tiket i
 - Apakah tautan di tiket menunjuk ke berkas yang ada dan memuat hal yang dijanjikan?
 - Menurut `{{SDD_HOME}}/workflow/context-matrix.md`, adakah isi yang bukan urusan role tiket ini, misalnya detail infrastruktur atau skema database di tiket Mobile?
 - Adakah bagian yang kosong tanpa tulisan "Tidak ada"?
+- Jika ada tiket desain, apakah ia memuat semua layar dan state yang dibutuhkan tiket Mobile?
 - Apakah ketergantungan antar-tiket masuk akal dan tidak melingkar?
 
 ## Apa yang termasuk temuan

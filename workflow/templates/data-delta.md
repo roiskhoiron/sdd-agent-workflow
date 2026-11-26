@@ -1,6 +1,6 @@
 # Delta data: [judul]
 
-Hanya perubahan terhadap `foundation/skema-database.md`. Tulis "Tidak ada perubahan" jika kosong.
+Hanya perubahan terhadap `docs/foundation/skema-database.md`. Tulis "Tidak ada perubahan" jika kosong.
 
 ## Perubahan skema
 | Tabel | Perubahan | Alasan |

@@ -6,7 +6,7 @@ user-invocable: false
 
 # Menulis contract dan delta
 
-Masukan: `prd.md`, `flow.md`, dan seluruh `foundation/` proyek. Keluaran ada di dua folder dengan pembaca yang berbeda:
+Masukan: `prd.md`, `flow.md`, `docs/foundation/`, `docs/contracts/`, dan `docs/adr/`. Keluaran ada di dua folder dengan pembaca yang berbeda:
 
 | Berkas | Isi | Dibaca oleh |
 | --- | --- | --- |
@@ -21,7 +21,7 @@ Template ada di `{{SDD_HOME}}/workflow/templates/`. Berkas `specs/` yang tidak r
 
 ## Dua keadaan
 
-**Contract tidak berubah.** Semua endpoint yang dibutuhkan flow sudah ada di katalog. Tulis manifes dengan `"changed": false`, `version` sama dengan versi katalog, dan `source` menunjuk ke berkas di `foundation/contracts/`. Jangan membuat `api.yaml`.
+**Contract tidak berubah.** Semua endpoint yang dibutuhkan flow sudah ada di katalog. Tulis manifes dengan `"changed": false`, `version` sama dengan versi katalog, dan `source` menunjuk ke berkas di `docs/contracts/`. Jangan membuat `api.yaml`.
 
 **Contract berubah.** Salin contract dari katalog ke `contract/api.yaml`, terapkan perubahan, dan naikkan versi: angka tengah untuk penambahan yang tidak merusak klien lama, angka depan untuk perubahan yang merusak. Manifes berisi `"changed": true`, `previous_version`, dan `summary`. Versi di manifes dan di `info.version` harus sama.
 

@@ -22,6 +22,7 @@ MARK_END = "<!-- sdd-agent-workflow:end -->"
 MANIFEST = "install-manifest.json"
 ROLES = ("pdm", "product-designer", "hoe", "pjm", "egm-reviewer")
 ENTRY_SKILLS = ("initiate-epic-ticket", "modify-epic-ticket", "clean-epic-ticket")
+INVOKE = "{p}initiate-epic-ticket <kebutuhan>`, `{p}modify-epic-ticket <epic> <perubahan>`, `{p}clean-epic-ticket <epic> <selesai|dibatalkan>"
 
 # ---------------------------------------------------------------------------
 # Profil alat. Path diawali "~/" berarti relatif ke HOME, selain itu relatif ke
@@ -62,7 +63,7 @@ TOOLS = {
         "agent_format": "claude",
         "instr": {"project": "CLAUDE.md", "global": "~/.claude/CLAUDE.md"},
         "headless": 'claude -p --permission-mode acceptEdits "<prompt>"',
-        "invoke": "Panggil dengan `/initiate-epic-ticket <proyek> <kebutuhan>`, `/modify-epic-ticket ...`, `/clean-epic-ticket ...`.",
+        "invoke": "Panggil dengan `" + INVOKE.format(p="/") + "`.",
         "skill_meta": ("name", "description", "argument-hint", "disable-model-invocation", "user-invocable"),
         "keeps_arguments": True,
     },
@@ -74,7 +75,7 @@ TOOLS = {
         "agent_format": "codex-toml",
         "instr": {"project": "AGENTS.md", "global": "~/.codex/AGENTS.md"},
         "headless": 'codex exec --sandbox workspace-write "<prompt>"',
-        "invoke": "Panggil dengan `$initiate-epic-ticket <proyek> <kebutuhan>`, `$modify-epic-ticket ...`, `$clean-epic-ticket ...`.",
+        "invoke": "Panggil dengan `" + INVOKE.format(p="$") + "`.",
         "skill_meta": ("name", "description"),
     },
     "gemini": {
@@ -85,7 +86,7 @@ TOOLS = {
         "agent_format": "gemini",
         "instr": {"project": "GEMINI.md", "global": "~/.gemini/GEMINI.md"},
         "headless": 'gemini --approval-mode=auto_edit -p "<prompt>"',
-        "invoke": "Panggil dengan `/initiate-epic-ticket <proyek> <kebutuhan>`, `/modify-epic-ticket ...`, `/clean-epic-ticket ...`.",
+        "invoke": "Panggil dengan `" + INVOKE.format(p="/") + "`.",
         "skill_meta": ("name", "description"),
         "extras": _command_files("gemini-toml", {"project": ".gemini/commands", "global": "~/.gemini/commands"}),
     },
@@ -97,7 +98,7 @@ TOOLS = {
         "agent_format": "opencode",
         "instr": {"project": "AGENTS.md", "global": "~/.config/opencode/AGENTS.md"},
         "headless": 'opencode run "<prompt>"',
-        "invoke": "Panggil dengan `/initiate-epic-ticket <proyek> <kebutuhan>`, `/modify-epic-ticket ...`, `/clean-epic-ticket ...`.",
+        "invoke": "Panggil dengan `" + INVOKE.format(p="/") + "`.",
         "skill_meta": ("name", "description"),
         "extras": _command_files("md", {"project": ".opencode/commands", "global": "~/.config/opencode/commands"}),
     },
@@ -110,7 +111,7 @@ TOOLS = {
         # Aturan global Cursor diatur di UI (User Rules), tidak ada berkas yang terdokumentasi.
         "instr": {"project": "AGENTS.md", "global": None},
         "headless": 'agent -p --force "<prompt>"',
-        "invoke": "Panggil dengan `/initiate-epic-ticket <proyek> <kebutuhan>`, `/modify-epic-ticket ...`, `/clean-epic-ticket ...`.",
+        "invoke": "Panggil dengan `" + INVOKE.format(p="/") + "`.",
         "skill_meta": ("name", "description", "disable-model-invocation"),
     },
     "copilot": {
@@ -121,7 +122,7 @@ TOOLS = {
         "agent_format": "copilot",
         "instr": {"project": ".github/copilot-instructions.md", "global": "~/.copilot/copilot-instructions.md"},
         "headless": 'copilot -p "<prompt>" --allow-tool=write --no-ask-user',
-        "invoke": "Panggil dengan `/initiate-epic-ticket <proyek> <kebutuhan>`, `/modify-epic-ticket ...`, `/clean-epic-ticket ...`.",
+        "invoke": "Panggil dengan `" + INVOKE.format(p="/") + "`.",
         "skill_meta": ("name", "description", "argument-hint", "disable-model-invocation", "user-invocable"),
     },
     "generic": {
@@ -131,7 +132,7 @@ TOOLS = {
         "agents": {},
         "instr": {"project": "AGENTS.md", "global": "~/.agents/AGENTS.md"},
         "headless": "<perintah sekali jalan alatmu> \"<prompt>\"",
-        "invoke": "Minta agen menjalankan skill `initiate-epic-ticket` dengan nama proyek dan kebutuhan, atau suruh ia membaca berkas SKILL.md-nya.",
+        "invoke": "Minta agen menjalankan skill `initiate-epic-ticket` dengan deskripsi kebutuhan, atau suruh ia membaca berkas SKILL.md-nya.",
         "skill_meta": ("name", "description"),
     },
 }
@@ -280,12 +281,14 @@ def agent_files(tool, ctx):
         body = render(body.strip(), ctx)
         skills = meta.get("skills") or []
         tools = [t.strip() for t in meta["tools"].split(",")]
+        unrestricted = tools == ["all"]
         skill_note = "\n\nSkill yang kamu jalankan disebut di brief. Baca berkasnya sebelum mulai:\n" + \
             "\n".join(f"- `{s}`: `{ctx['SKILLS_DIR']}/{s}/SKILL.md`" for s in skills)
         if fmt == "claude":
             names = {"read": "Read", "search": "Glob, Grep", "write": "Write", "edit": "Edit"}
-            m = {"name": role, "description": meta["description"], "tools": ", ".join(names[t] for t in tools),
-                 "skills": skills}
+            m = {"name": role, "description": meta["description"], "skills": skills}
+            if not unrestricted:
+                m["tools"] = ", ".join(names[t] for t in tools)
             if meta.get("isolated") == "true":
                 m["omitClaudeMd"] = "true"
             out[f"{role}.md"] = front(m, ["name", "description", "tools", "omitClaudeMd", "skills"]) + "\n" + body + "\n"
@@ -305,8 +308,9 @@ def agent_files(tool, ctx):
                                       ["name", "description"]) + "\n" + body + skill_note + "\n"
         elif fmt == "copilot":
             names = {"read": "read", "search": "search", "write": "edit", "edit": "edit"}
-            m = {"name": role, "description": meta["description"],
-                 "tools": "[" + ", ".join(json.dumps(t) for t in dict.fromkeys(names[t] for t in tools)) + "]"}
+            m = {"name": role, "description": meta["description"]}
+            if not unrestricted:
+                m["tools"] = "[" + ", ".join(json.dumps(t) for t in dict.fromkeys(names[t] for t in tools)) + "]"
             out[f"{role}.agent.md"] = front(m, ["name", "description", "tools"]) + "\n" + body + skill_note + "\n"
         elif fmt == "opencode":
             out[f"{role}.md"] = front({"description": meta["description"], "mode": "subagent"},
@@ -447,8 +451,6 @@ def install(args):
     manifest["scope"] = args.scope
     manifest["target"] = str(target)
     write_blocks(manifest, w, ctx)
-    if args.scope == "project" and not args.dry_run:
-        (target / "projects").mkdir(exist_ok=True)
     if not args.dry_run:
         home.mkdir(parents=True, exist_ok=True)
         (home / MANIFEST).write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -487,7 +489,7 @@ def uninstall(args):
         print(f"  inti workflow di {home} dihapus")
     else:
         (home / MANIFEST).write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"selesai, {removed} berkas adapter dihapus. Folder projects/ tidak disentuh.")
+    print(f"selesai, {removed} berkas adapter dihapus. sdd.json dan docs/ tidak disentuh.")
     return 0
 
 

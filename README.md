@@ -1,10 +1,10 @@
 # sdd-agent-workflow
 
-Tim agen AI yang mengubah **satu kebutuhan bisnis** menjadi **tiket yang siap dikerjakan**. Bisa dipasang di Claude Code, OpenAI Codex CLI, Gemini CLI, OpenCode, Cursor, GitHub Copilot, dan agen lain yang membaca `AGENTS.md`.
+Tim agen AI yang mengubah **satu kebutuhan bisnis** menjadi **tiket di papan kanban yang siap dikerjakan**. Bisa dipasang di Claude Code, OpenAI Codex CLI, Gemini CLI, OpenCode, Cursor, GitHub Copilot, dan agen lain yang membaca `AGENTS.md`.
 
 Kamu cukup menjelaskan kebutuhannya. Agen menulis PRD, flow layar, API contract, dan tiket. Setiap dokumen diuji reviewer independen, lalu kamu yang memutuskan sebelum tiket dikirim.
 
-> Cakupan saat ini: tiket untuk role **Mobile**. Pekerjaan Backend, Frontend web, dan DevOps dicatat sebagai daftar, belum dibuatkan tiket.
+> Cakupan saat ini: tiket untuk role **Mobile**, tiket contract, dan tiket desain untuk workflow UI/UX. Pekerjaan Backend, Frontend web, dan DevOps dicatat sebagai daftar, belum dibuatkan tiket.
 
 ---
 
@@ -17,7 +17,7 @@ Kamu cukup menjelaskan kebutuhannya. Agen menulis PRD, flow layar, API contract,
 5. [Tiga perintah utama](#tiga-perintah-utama)
 6. [Apa yang terjadi saat perintah berjalan](#apa-yang-terjadi-saat-perintah-berjalan)
 7. [Kapan kamu diminta memutuskan](#kapan-kamu-diminta-memutuskan)
-8. [Ke mana tiket dikirim](#ke-mana-tiket-dikirim)
+8. [Papan kanban, dokumen, dan desain](#papan-kanban-dokumen-dan-desain)
 9. [Struktur folder](#struktur-folder)
 10. [Masalah umum](#masalah-umum)
 11. [Istilah](#istilah)
@@ -48,8 +48,9 @@ Rancangan lengkapnya: [Draft: Agent Workflow Produksi Tiket (BMAD × EGM)](https
 | Satu AI coding agent | Lihat [Alat yang didukung](#alat-yang-didukung) |
 | Python 3.8 atau lebih baru | Untuk pemasang dan skrip penjaga. Tidak perlu `pip install` apa pun. |
 | Bash dan Git | Untuk menjalankan `install.sh`. Di Windows, pakai WSL atau Git Bash. |
-| Konektor Atlassian | **Hanya** jika tiket dikirim ke Jira. Untuk uji coba tidak perlu. |
-| Akses GitHub ke repo tujuan | **Hanya** jika tiket dikirim ke GitHub Issues |
+| GitHub CLI (`gh`) atau GitHub MCP | Untuk papan default, GitHub Projects. Token butuh scope `project`. |
+| Konektor Atlassian | **Hanya** jika papannya Jira. Tidak boleh dipakai selama uji coba. |
+| FigCraft MCP atau Figma MCP | Disarankan, supaya Product Designer bisa membaca berkas desain tim. Tanpanya, flow ditulis sebagai wireframe teks. |
 
 ---
 
@@ -87,8 +88,8 @@ Nomor [1 2]: 1
   2) global   untuk semua proyek di komputer ini, hanya untuk kamu
 Nomor [1]: 1
 
-3. Folder proyek
-Folder [/home/kamu]: ~/kerja/spesifikasi-chefgenie
+3. Repo proyek
+Folder [/home/kamu]: ~/kerja/chefgenie
 ```
 
 Boleh memilih lebih dari satu alat sekaligus, misalnya `1 2 6`. Alat yang ditandai `*` terdeteksi di komputermu, dan itulah pilihan awalnya.
@@ -97,82 +98,80 @@ Boleh memilih lebih dari satu alat sekaligus, misalnya `1 2 6`. Alat yang ditand
 
 | Scope | Dipasang di | Pilih jika |
 | --- | --- | --- |
-| `project` | Folder proyek yang kamu pilih. Inti workflow di `<folder>/.sdd/`. | Kamu ingin tim memakai workflow yang sama lewat Git. **Disarankan untuk mulai.** |
-| `global` | Folder konfigurasi alat di `~`. Inti workflow di `~/.sdd-agent-workflow/`. | Kamu ingin workflow tersedia di semua folder, hanya untuk dirimu. |
+| `project` | Repo proyek yang kamu pilih. Inti workflow di `<repo>/.sdd/`. | Kamu ingin tim memakai workflow yang sama lewat Git. **Disarankan untuk mulai.** |
+| `global` | Folder konfigurasi alat di `~`. Inti workflow di `~/.sdd-agent-workflow/`. | Kamu ingin workflow tersedia di semua repo, hanya untuk dirimu. |
 
-Dokumen spesifikasi selalu ditulis di folder `projects/` pada folder tempat coding agent dibuka, apa pun scope-nya.
+Apa pun scope-nya, satu repo adalah satu proyek. Memory project (`sdd.json`) dan dokumen (`docs/`) selalu ditulis di repo tempat coding agent dibuka.
 
 ### 3. Jalankan perintah pertama
 
-Buka folder proyek dengan coding agent-mu, lalu jalankan `initiate-epic-ticket`. Di Claude Code, misalnya:
+Buka repo proyek dengan coding agent-mu, lalu jalankan `initiate-epic-ticket` dengan deskripsi kebutuhan. Di Claude Code, misalnya:
 
 ```
-/initiate-epic-ticket chefgenie Pengguna bisa menyimpan resep favorit
+/initiate-epic-ticket Pengguna bisa menyimpan resep favorit
 ```
 
 Cara memanggil di alat lain ada di [Alat yang didukung](#alat-yang-didukung).
 
-Karena proyek `chefgenie` belum ada, agen membuat folder `projects/chefgenie/` dari template **lalu berhenti**. Ini disengaja: agen butuh informasi proyek sebelum bisa menulis tiket yang benar.
+### 4. Jawab tiga pertanyaan platform (sekali saja)
 
-### 4. Isi data proyek
+Pada pemakaian pertama di sebuah repo, agen menanyakan tiga pilihan lalu menyimpannya di **memory project**, yaitu berkas `sdd.json` di akar repo. Pertanyaan ini tidak muncul lagi.
 
-Buka dan isi dua hal ini:
+| Pertanyaan | Default | Pilihan lain |
+| --- | --- | --- |
+| Papan kanban | GitHub Projects | Jira, atau `lokal` (berkas di repo, untuk uji coba) |
+| Platform dokumentasi | Folder `docs/` di repo | Claude Docs, Confluence, Notion |
+| Platform desain | FigCraft MCP | Figma MCP resmi, Claude Design |
 
-**a. `projects/<proyek>/project.json`.** Ganti setiap teks `ISI` dengan nilai sebenarnya. Yang paling penting:
+Setelah papan dipilih, agen **menguji empat kemampuan** papan itu: membuat epic, membuat tiket anak, membuat ketergantungan, dan membaca status. Jika ada yang tidak didukung, agen memberitahumu sekarang dan menggantinya dengan teks di isi tiket.
 
-| Kunci | Isi dengan |
-| --- | --- |
-| `name` | Nama proyek |
-| `pilot` | Biarkan `true` selama uji coba |
-| `tracker.type` | `lokal` untuk mulai. Lihat [Ke mana tiket dikirim](#ke-mana-tiket-dikirim). |
-| `owners` | Nama orang yang menyetujui tiap jenis dokumen |
-| `references` | Tautan ke konvensi kode mobile dan konfigurasi environment |
+Lalu agen membuat folder `docs/` dari template **dan berhenti**. Ini disengaja: agen butuh pengetahuan dasar proyek sebelum bisa menulis tiket yang benar.
 
-Bagian `jira` boleh dibiarkan selama `tracker.type` bukan `jira`.
+### 5. Isi Foundation, lalu jalankan lagi
 
-**b. Enam dokumen di `projects/<proyek>/foundation/`.** Ini pengetahuan dasar proyek yang dirujuk oleh tiket.
+Isi dokumen dasar proyek di `docs/`:
 
 | Berkas | Isi singkat | Wajib untuk tiket Mobile? |
 | --- | --- | --- |
-| `design-system.md` | Komponen UI, warna, tipografi, pola layar | **Ya** |
-| `katalog-contract.md` | Daftar API contract yang berlaku dan versinya | **Ya** |
-| `infrastruktur.md` | Server, environment, jalur deploy | Tidak |
-| `stack-backend.md` | Bahasa, framework, konvensi backend | Tidak |
-| `skema-database.md` | Tabel inti dan aturan migrasi | Tidak |
-| `adr.md` | Catatan keputusan arsitektur | Tidak |
+| `docs/foundation/design-system.md` | Komponen UI, warna, tipografi, pola layar | **Ya** |
+| `docs/contracts/katalog.md` | Daftar API contract yang berlaku dan versinya | **Ya** |
+| `docs/foundation/infrastruktur.md` | Server, environment, jalur deploy | Tidak |
+| `docs/foundation/stack-backend.md` | Bahasa, framework, konvensi backend | Tidak |
+| `docs/foundation/skema-database.md` | Tabel inti dan aturan migrasi | Tidak |
+| `docs/adr/` | Catatan keputusan arsitektur, satu berkas per keputusan | Tidak |
 
-Tidak harus sempurna. Mulai dengan yang kamu tahu, lalu lengkapi seiring waktu.
+Lengkapi juga `owners` dan `references` di `sdd.json`: nama orang yang menyetujui tiap jenis dokumen, dan tautan ke konvensi kode mobile serta konfigurasi environment. Tidak harus sempurna. Mulai dengan yang kamu tahu.
 
-### 5. Jalankan lagi perintah yang sama
+Lalu jalankan perintah yang sama lagi:
 
 ```
-/initiate-epic-ticket chefgenie Pengguna bisa menyimpan resep favorit
+/initiate-epic-ticket Pengguna bisa menyimpan resep favorit
 ```
 
-Sekarang agen akan bertanya tentang kebutuhanmu, lalu bekerja tahap demi tahap. Ikuti pertanyaannya sampai tiket terkirim.
+Sekarang agen akan bertanya tentang kebutuhanmu, lalu bekerja tahap demi tahap. Ikuti pertanyaannya sampai tiket masuk papan.
 
 ### Memasang tanpa pertanyaan, menambah alat, dan mencopot
 
 ```bash
 # Tanpa pertanyaan
-./install.sh --agent claude,codex --scope project --target ~/kerja/spesifikasi --yes
+./install.sh --agent claude,codex --scope project --target ~/kerja/chefgenie --yes
 
 # Menambah alat nanti: jalankan lagi dengan alat baru. Yang sudah ada tidak terganggu.
-./install.sh --agent copilot --scope project --target ~/kerja/spesifikasi --yes
+./install.sh --agent copilot --scope project --target ~/kerja/chefgenie --yes
 
 # Lihat rencana tanpa menulis apa pun
 ./install.sh --agent gemini --scope global --dry-run --yes
 
 # Copot satu alat, atau semuanya bila --agent tidak diberikan
-./install.sh --uninstall --agent codex --scope project --target ~/kerja/spesifikasi
-./install.sh --uninstall --scope project --target ~/kerja/spesifikasi
+./install.sh --uninstall --agent codex --scope project --target ~/kerja/chefgenie
+./install.sh --uninstall --scope project --target ~/kerja/chefgenie
 ```
 
 Pemasang aman dijalankan berulang kali:
 
 - Isi berkas instruksimu (`AGENTS.md`, `CLAUDE.md`, dan lainnya) tidak disentuh. Pemasang hanya menambah atau mengganti satu blok bertanda `sdd-agent-workflow`.
 - Berkas yang sudah ada dan bukan buatan pemasang tidak ditimpa, kecuali kamu menambahkan `--force`.
-- Mencopot tidak pernah menghapus folder `projects/` berisi pekerjaanmu.
+- Mencopot tidak pernah menghapus `sdd.json` dan folder `docs/` berisi pekerjaanmu.
 
 ---
 
@@ -180,12 +179,12 @@ Pemasang aman dijalankan berulang kali:
 
 | Alat | `--agent` | Cara memanggil perintah | Agen peran |
 | --- | --- | --- | --- |
-| Claude Code | `claude` | `/initiate-epic-ticket chefgenie ...` | Subagent native |
-| OpenAI Codex CLI | `codex` | `$initiate-epic-ticket chefgenie ...` | Subagent native (TOML) |
-| Gemini CLI | `gemini` | `/initiate-epic-ticket chefgenie ...` (perintah kustom) | Subagent native |
-| OpenCode | `opencode` | `/initiate-epic-ticket chefgenie ...` (perintah kustom) | Subagent native |
-| Cursor (editor dan CLI) | `cursor` | `/initiate-epic-ticket chefgenie ...` | Subagent native |
-| GitHub Copilot (VS Code dan CLI) | `copilot` | `/initiate-epic-ticket chefgenie ...` | Custom agent |
+| Claude Code | `claude` | `/initiate-epic-ticket <kebutuhan>` | Subagent native |
+| OpenAI Codex CLI | `codex` | `$initiate-epic-ticket <kebutuhan>` | Subagent native (TOML) |
+| Gemini CLI | `gemini` | `/initiate-epic-ticket <kebutuhan>` (perintah kustom) | Subagent native |
+| OpenCode | `opencode` | `/initiate-epic-ticket <kebutuhan>` (perintah kustom) | Subagent native |
+| Cursor (editor dan CLI) | `cursor` | `/initiate-epic-ticket <kebutuhan>` | Subagent native |
+| GitHub Copilot (VS Code dan CLI) | `copilot` | `/initiate-epic-ticket <kebutuhan>` | Custom agent |
 | Agen lain | `generic` | Minta agen menjalankan skill `initiate-epic-ticket` | Proses baru lewat perintah headless |
 
 Lokasi berkas yang dipasang per alat:
@@ -235,22 +234,23 @@ Kamu hanya perlu mengingat tiga perintah ini.
 
 | Perintah | Kapan dipakai | Hasilnya |
 | --- | --- | --- |
-| `/initiate-epic-ticket <proyek> <kebutuhan>` | Ada kebutuhan baru | Epic dan tiket baru di tracker |
-| `/modify-epic-ticket <proyek> <epic> <perubahan>` | Kebutuhan atau API berubah setelah tiket dibuat | Hanya dokumen dan tiket yang terdampak yang diperbarui |
-| `/clean-epic-ticket <proyek> <epic> <selesai\|dibatalkan>` | Epic selesai atau dibatalkan | Tiket usang ditutup, epic diarsipkan, Foundation diperbarui |
+| `/initiate-epic-ticket <kebutuhan>` | Ada kebutuhan baru | Epic dan tiket baru di papan kanban |
+| `/modify-epic-ticket <epic> <perubahan>` | Kebutuhan atau API berubah setelah tiket dibuat | Hanya dokumen dan tiket yang terdampak yang diperbarui |
+| `/clean-epic-ticket <epic> <selesai\|dibatalkan>` | Epic selesai atau dibatalkan | Tiket usang ditutup, epic diarsipkan, Foundation diperbarui |
 
 Contoh:
 
 ```
-/modify-epic-ticket chefgenie resep-favorit Batas favorit naik dari 50 menjadi 100
-/clean-epic-ticket chefgenie resep-favorit selesai
+/initiate-epic-ticket Pengguna bisa menyimpan resep favorit
+/modify-epic-ticket resep-favorit Batas favorit naik dari 50 menjadi 100
+/clean-epic-ticket resep-favorit selesai
 ```
 
-`<epic>` boleh berupa nama folder epic (misalnya `resep-favorit`) atau kode tiket epic di tracker.
+`<epic>` boleh berupa nama folder epic di `docs/epics/` (misalnya `resep-favorit`) atau kode epic di papan (misalnya `#42` atau `BC-120`).
 
-Contoh di atas memakai gaya Claude Code. Di Codex ganti `/` dengan `$`. Di alat tanpa perintah slash, tulis saja permintaannya, misalnya "jalankan skill modify-epic-ticket untuk proyek chefgenie, epic resep-favorit, ...".
+Contoh di atas memakai gaya Claude Code. Di Codex ganti `/` dengan `$`. Di alat tanpa perintah slash, tulis saja permintaannya, misalnya "jalankan skill modify-epic-ticket untuk epic resep-favorit, ...".
 
-> ⚠️ **Jangan mengedit tiket langsung di tracker** setelah epic dibuat. Perubahan manual akan tertimpa oleh `/modify-epic-ticket` berikutnya. Selalu ubah lewat perintah.
+> ⚠️ **Jangan mengedit tiket langsung di papan** setelah epic dibuat. Perubahan manual akan tertimpa oleh `/modify-epic-ticket` berikutnya. Selalu ubah lewat perintah.
 
 ---
 
@@ -259,6 +259,9 @@ Contoh di atas memakai gaya Claude Code. Di Codex ganti `/` dengan `$`. Di alat 
 ### Alur `/initiate-epic-ticket`
 
 ```
+Pemakaian pertama: pilih papan, platform dokumen, platform desain
+        │
+        ▼
 Kamu menjelaskan kebutuhan
         │
         ▼
@@ -269,11 +272,13 @@ Agen mengusulkan ukuran ──► kamu memilih: kecil / sedang / besar
         ▼ sedang / besar                               │
 1. PdM menulis PRD ─────────────► gate review          │
 2. Product Designer menulis flow ► gate review         │
+   (komponen atau layar baru: perlu tiket desain)      │
 3. HoE menulis API contract ────► gate review          │
    (jika API berubah: pemilik contract harus setuju)   │
         │                                              │
         ▼                                              │
 4. PjM memecah menjadi tiket ◄─────────────────────────┘
+   (tiket desain memblokir tiket Mobile)
         │
         ▼
    cek format otomatis ──► gate review
@@ -282,18 +287,18 @@ Agen mengusulkan ukuran ──► kamu memilih: kecil / sedang / besar
 Kamu memutuskan setiap temuan, lalu menyetujui
         │
         ▼
-Tiket dikirim ke tracker
+Tiket masuk papan kanban, siap untuk delivery
 ```
 
 ### Peran agen
 
 | Agen | Tugas |
 | --- | --- |
-| **SPV** (sesi utama) | Mengatur urutan, bertanya kepadamu, memanggil agen lain |
+| **SPV** (agen yang kamu ajak bicara) | Mengatur urutan, bertanya kepadamu, menyiapkan platform, memanggil agen lain, dan mengirim tiket ke papan |
 | **PdM** | Menulis PRD: masalah, scope, acceptance criteria |
-| **Product Designer** | Menulis flow layar dan semua state-nya (kosong, memuat, berhasil, gagal, offline) |
+| **Product Designer** | Menulis flow layar dan semua state-nya (kosong, memuat, berhasil, gagal, offline), membaca berkas desain tim, dan memutuskan apakah perlu tiket desain |
 | **HoE** | Menulis API contract dan catatan teknis server |
-| **PjM** | Memecah epic menjadi tiket per role |
+| **PjM** | Memecah epic menjadi tiket per role, termasuk tiket desain |
 | **Reviewer EGM** | Membaca dokumen tanpa konteks dan mencatat yang tidak jelas, bertentangan, atau hilang |
 
 ### Cara kerja gate review
@@ -327,8 +332,9 @@ Agen akan berhenti dan bertanya di titik-titik ini. Tabel ini membantumu menjawa
 | Titik | Yang perlu kamu periksa | Jika ragu |
 | --- | --- | --- |
 | **Ukuran pekerjaan** | Apakah menyentuh lebih dari satu role? Butuh API baru? | Pilih ukuran yang lebih besar |
-| **Review flow** | Apakah flow layar sesuai harapan pemilik desain? | Minta revisi |
-| **Persetujuan contract** | Apakah API cocok dengan flow, dan pemilik contract sudah setuju? | Jangan lanjut tanpa pemilik contract |
+| **Platform** (sekali per repo) | Papan, dokumen, dan desain mana yang dipakai tim? | Pakai default: GitHub Projects, `docs/`, FigCraft |
+| **Review flow** | Apakah flow layar sesuai harapan pemilik desain, dan perlukah tiket desain? | Minta revisi. Jika ragu soal tiket desain, pilih ya. |
+| **Persetujuan contract** | Apakah API cocok dengan prototipe atau flow, dan pemilik contract sudah setuju? | Jangan lanjut tanpa pemilik contract |
 | **Temuan terbawa** | Apakah alasan penulis menolak temuan itu masuk akal? | Pilih "revisi" |
 | **Persetujuan akhir** | Bisakah tiket Mobile dikerjakan tanpa bertanya balik? | Tulis komentar, jangan setujui |
 
@@ -336,43 +342,67 @@ Setiap keputusan dicatat beserta namamu. Kamu tidak bisa menyetujui semuanya sek
 
 ---
 
-## Ke mana tiket dikirim
+## Papan kanban, dokumen, dan desain
 
-Tujuan tiket diatur di `project.json`, kunci `tracker.type`.
+Workflow ini tidak terikat pada satu platform. Pilihannya disimpan di `sdd.json` saat pemakaian pertama.
 
-| Nilai | Tiket masuk ke | Cocok untuk |
+### Papan kanban
+
+| Nilai `board.platform` | Tiket masuk ke | Cocok untuk |
 | --- | --- | --- |
-| `lokal` | Berkas Markdown di `projects/<proyek>/tracker-lokal/` | Belajar dan uji coba. **Nilai awal.** |
-| `github` | GitHub Issues di repo `tracker.github_repo` | Uji coba dengan tracker sungguhan |
-| `jira` | Proyek Jira sesuai bagian `jira` | Pemakaian produksi |
+| `github-projects` | Issue induk dan sub-issue di GitHub, ditambahkan ke GitHub Projects | **Default.** Uji coba dan pemakaian sungguhan. |
+| `jira` | Epic dan issue anak di Jira | Pemakaian produksi, setelah uji coba selesai |
+| `lokal` | Berkas Markdown di `docs/papan-lokal/` | Belajar dan uji coba tanpa layanan luar |
+
+Cara workflow memakai papan:
+
+| Konsep | GitHub Projects | Jira |
+| --- | --- | --- |
+| Epic | Issue induk | Epic |
+| Tiket per role | Sub-issue | Issue anak |
+| Ketergantungan | Issue dependencies (blocked by) | Link is blocked by |
+| Status | Kolom papan: Todo, Ready To Review, Done | Status workflow |
+| Role pengerja | Label, misalnya `role:mobile` | Label atau komponen |
+
+Jika nama kolom di papanmu berbeda, ubah `board.status_map` di `sdd.json`.
 
 > 🔒 **Aturan keras: uji coba tidak boleh memakai Jira.**
-> Proyek baru selalu dibuat dengan `"pilot": true`. Selama nilainya `true` (atau kuncinya tidak ada), skrip **menolak** mengirim ke Jira. Hanya pemilik proyek yang boleh mengubahnya menjadi `false`, dan agen dilarang mengubahnya sendiri.
+> Proyek baru selalu dibuat dengan `"pilot": true`. Selama nilainya `true` (atau kuncinya tidak ada), skrip **menolak** memilih Jira dan **menolak** mengirim ke Jira. Hanya pemilik proyek yang boleh mengubahnya menjadi `false` dengan mengedit `sdd.json`, dan agen dilarang mengubahnya sendiri.
+
+**Mengganti papan** tidak memindahkan tiket lama. Jalankan ulang setup lewat agen. Epic yang sudah berjalan diselesaikan di papan lamanya.
+
+### Dokumentasi
+
+Dokumen selalu ditulis lebih dulu di `docs/` dalam repo, karena gate dan persetujuan bekerja dari berkas di sana. Jika kamu memilih Claude Docs, Confluence, atau Notion, agen menyalin PRD, flow, dan contract ke platform itu setelah disetujui, supaya mudah dibaca dan dikomentari.
+
+### Desain
+
+Product Designer membaca berkas desain tim lewat FigCraft MCP (default) atau Figma MCP, tetapi tidak membuat desain final. Untuk epic yang butuh komponen baru atau banyak layar baru, PjM membuat **tiket desain** untuk workflow UI/UX. Tiket Mobile menunggu tiket desain itu selesai, lalu merujuk prototipe dan halaman handover-nya.
 
 ---
 
 ## Struktur folder
 
-Setelah dipasang dengan scope `project`, folder proyekmu berisi:
+Setelah dipasang dengan scope `project` dan dipakai sekali, repo proyekmu berisi:
 
 ```
-<folder proyek>/
+<repo proyek>/
 ├── .sdd/                  inti workflow (jangan diedit, dipasang ulang oleh pemasang)
 │   ├── scripts/sdd.py     skrip penjaga aturan
-│   ├── workflow/          matriks konteks, prosedur gate, template
+│   ├── workflow/          matriks konteks, prosedur gate, adapter papan, template
 │   ├── skills/            salinan netral semua skill
 │   └── roles/             prompt agen peran untuk mode headless
 ├── .claude/ .codex/ ...   adapter untuk alat yang kamu pilih
 ├── AGENTS.md / CLAUDE.md  blok aturan workflow ditambahkan di sini
-└── projects/              pekerjaanmu
-    └── <proyek>/
-        ├── project.json
-        ├── foundation/        6 dokumen dasar proyek
-        ├── tracker-lokal/     tiket, jika tracker = lokal
-        └── epics/<slug>/      satu folder per kebutuhan
+├── sdd.json               memory project: pilihan platform, pemilik, rujukan
+└── docs/                  pekerjaanmu
+    ├── foundation/        design system, infrastruktur, stack, skema database
+    ├── contracts/         API contract berversi dan katalognya
+    ├── adr/               catatan keputusan
+    └── epics/<slug>/      satu folder per kebutuhan
 ```
 
-Commit semuanya ke Git supaya tim memakai versi workflow yang sama.
+Commit semuanya ke Git supaya tim memakai versi workflow dan pilihan platform yang sama.
 
 Isi satu folder epic:
 
@@ -383,10 +413,10 @@ Isi satu folder epic:
 | `flow.md` | Product Designer | Layar, flow, dan state |
 | `contract/` | HoE | API contract, dibaca semua role |
 | `specs/` | HoE | Catatan teknis server, **tidak** dibaca role Mobile |
-| `tickets/` | PjM | Satu berkas per tiket |
+| `tickets/` | PjM | Satu berkas per tiket: Mobile, contract, dan desain |
 | `reviews/` | Reviewer dan penulis | Temuan dan jawabannya |
 | `approval.md` | SPV | Ringkasan yang kamu baca sebelum menyetujui |
-| `epic.json`, `approval.json`, `jira-map.json` | Skrip | Status. **Jangan diedit manual.** |
+| `epic.json`, `approval.json`, `board-map.json` | Skrip | Status dan kode tiket di papan. **Jangan diedit manual.** |
 
 ---
 
@@ -397,18 +427,21 @@ Isi satu folder epic:
 | `python3 tidak ditemukan` saat memasang | Python belum terpasang | Pasang Python 3.8 atau lebih baru |
 | "Dilewati karena sudah ada" saat memasang | Ada berkas dengan nama sama yang bukan buatan pemasang | Periksa berkasnya. Jika aman ditimpa, ulangi dengan `--force`. |
 | Perintah `/initiate-epic-ticket` tidak dikenal | Alat belum memuat ulang skill, atau dipanggil dengan gaya alat lain | Mulai ulang sesi alat. Lihat kolom "Cara memanggil" di [Alat yang didukung](#alat-yang-didukung). |
-| Perintah berhenti setelah membuat folder proyek | Proyek baru, `project.json` belum diisi | Isi `project.json` dan `foundation/`, lalu jalankan lagi |
-| Agen bertanya tentang teks `ISI` | Ada bagian `project.json` yang belum diisi | Isi bagian yang disebut agen |
+| Perintah berhenti setelah membuat folder `docs/` | Pemakaian pertama, Foundation belum diisi | Isi `docs/foundation/` dan `docs/contracts/katalog.md`, lalu jalankan lagi |
+| Agen bertanya tentang teks `ISI` | Ada bagian `sdd.json` yang belum diisi | Isi bagian yang disebut agen |
+| Uji papan gagal saat setup | `gh` belum login, atau token tanpa scope `project` | Jalankan `gh auth login` atau `gh auth refresh -s project`, lalu ulangi |
+| "board.platform ... belum dipilih" | Setup papan belum berjalan | Jalankan salah satu dari tiga perintah utama. Setup berjalan otomatis. |
 | "gate ... berstatus berhenti" | Dua kali revisi belum cukup | Baca temuannya, beri arahan ke agen |
 | "gate ... berstatus usang" | Dokumen berubah setelah gate lolos | Biarkan agen menjalankan review ulang |
 | "berkas berubah setelah disetujui" | Ada perubahan setelah kamu menyetujui | Setujui ulang lewat agen |
-| "proyek ini pilot dan tracker-nya Jira" | Aturan keras pilot | Pakai tracker `lokal` atau `github` |
+| "proyek ini pilot dan papannya Jira" | Aturan keras pilot | Pakai papan `github-projects` atau `lokal` |
 | Perintah terhenti di tengah | Sesi ditutup atau menunggu keputusan | Jalankan perintah yang sama lagi. Agen melanjutkan dari tahap terakhir yang belum lolos. |
 
 Cek posisi sebuah epic kapan saja:
 
 ```bash
-python3 .sdd/scripts/sdd.py status projects/<proyek>/epics/<slug>
+python3 .sdd/scripts/sdd.py status docs/epics/<slug>
+python3 .sdd/scripts/sdd.py memory .        # pilihan platform yang tersimpan
 # scope global: python3 ~/.sdd-agent-workflow/scripts/sdd.py status ...
 ```
 
@@ -427,6 +460,9 @@ python3 .sdd/scripts/sdd.py status projects/<proyek>/epics/<slug>
 | **Temuan** | Catatan reviewer tentang hal yang tidak jelas, bertentangan, atau hilang |
 | **BMAD** | Pola agen yang menulis dokumen per peran |
 | **EGM** | Pola review "gajah menulis, ikan mas me-review": penulis yang tahu banyak, reviewer yang tidak membawa ingatan apa pun |
+| **Papan kanban** | Tempat tiket dikerjakan, misalnya GitHub Projects atau Jira |
+| **Memory project** | Berkas `sdd.json` yang menyimpan pilihan platform proyek |
+| **Tiket desain** | Tiket untuk workflow UI/UX yang menghasilkan prototipe dan halaman handover |
 | **Pilot** | Uji coba. Proyek pilot tidak boleh memakai Jira. |
 
 ---
@@ -439,10 +475,10 @@ Bagian ini untuk yang ingin mengubah workflow, bukan sekadar memakainya.
 
 | Lokasi | Isi |
 | --- | --- |
-| `src/skills/` | Sumber 14 skill, netral alat. Path ditulis dengan `{{SDD_HOME}}`. |
+| `src/skills/` | Sumber 17 skill (3 pintu masuk, 14 internal), netral alat. Path ditulis dengan `{{SDD_HOME}}`. |
 | `src/agents/` | Sumber 5 agen peran dengan frontmatter netral (`tools: read, search, write, edit`) |
 | `src/instructions.md` | Blok aturan yang disisipkan ke berkas instruksi tiap alat |
-| `workflow/` | Matriks konteks, prosedur gate, template dokumen dan proyek |
+| `workflow/` | Matriks konteks, prosedur gate, adapter papan di `boards/`, template dokumen, kerangka proyek |
 | `scripts/sdd.py` | Skrip penjaga aturan |
 | `scripts/install_agent.py` | Pemasang: profil alat di `TOOLS`, render skill, agen, dan blok instruksi |
 | `install.sh` | Antarmuka interaktif yang memanggil `install_agent.py` |
@@ -452,6 +488,10 @@ Repo ini sendiri tidak memasang workflow-nya. Untuk mencobanya, pasang ke folder
 ### Menambah alat baru
 
 Tambahkan satu entri di `TOOLS` dalam `scripts/install_agent.py`: folder skill, folder agen dan formatnya, berkas instruksi, perintah headless, dan cara memanggil. Jika format agennya baru, tambahkan cabang di `agent_files`. Tambahkan juga deteksinya di `install.sh`, lalu jalankan uji.
+
+### Menambah platform papan
+
+Tulis satu adapter di `workflow/boards/<platform>.md` yang menjawab enam operasi (uji, buat-epic, buat-tiket, hubungkan, ubah-status, baca), lalu tambahkan namanya ke `BOARDS` di `scripts/sdd.py`. Skill lain tidak perlu diubah, karena hanya `push-board` dan `audit-epic` yang membaca adapter.
 
 ### Jalankan uji
 
@@ -473,21 +513,25 @@ Aturan berikut sengaja tidak bergantung pada kepatuhan agen.
 | Temuan ditolak atau diteruskan diputuskan manusia satu per satu | `decide` |
 | Contract yang berubah disetujui pemiliknya dulu | `approve-contract` |
 | Persetujuan mengunci isi epic | `approve`, `verify-approval` |
-| Proyek pilot tidak boleh ke Jira | `pending-push` |
+| Proyek pilot tidak boleh memilih atau mengirim ke Jira | `remember`, `pending-push` |
+| Pilihan platform hanya dari daftar yang didukung, `pilot` hanya diubah manusia | `remember` |
+| Tiket desain wajib memblokir tiket role | `lint` |
 | Hanya tiket baru, berubah, atau dihapus yang dikirim | `pending-push`, `record-push` |
 
 ### Keputusan awal yang bisa diubah
 
 | Hal | Pilihan saat ini | Tempat mengubah |
 | --- | --- | --- |
-| Format contract | OpenAPI 3.1 | `project.json`, skill `write-contract` |
-| Mockup | Tautan bila ada, wireframe teks bila tidak | `mockup_tool` di `project.json` |
+| Format contract | OpenAPI 3.1 | `contract_format` di `sdd.json`, skill `write-contract` |
+| Lokasi epic | `docs/epics/<slug>/`, bukan kode epic, karena kode baru ada setelah tiket dikirim | Skill `initiate-epic-ticket` |
+| Dokumen di platform lain | Salinan setelah persetujuan, sumber kebenaran tetap di repo | Skill `setup-docs` |
 | Model AI tiap peran | Mengikuti model sesi | Frontmatter agen hasil pasang |
 | Temuan gate | Berkas JSON di `reviews/` | Skill `egm-review` |
 | Pembaruan Foundation | Langsung setelah disetujui | Skill `clean-epic-ticket` |
 
 ### Belum dikerjakan
 
-- Template tiket Backend, Frontend web, dan DevOps.
+- Template tiket Backend, Frontend web, dan DevOps, serta workflow UI/UX dan QA yang berjalan di sampingnya.
+- Adapter papan Linear dan Trello.
 - Uji coba pada epic nyata. Skrip dan pemasang sudah diuji otomatis, tetapi alur agen belum pernah dijalankan dari awal sampai akhir di alat mana pun.
 - Hook yang memblokir integrasi Atlassian untuk proyek pilot. Saat ini larangannya dijaga skrip dan instruksi agen.

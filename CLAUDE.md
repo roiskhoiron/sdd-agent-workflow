@@ -6,10 +6,10 @@ Repo ini adalah **sumber** workflow produksi tiket, bukan tempat workflow dijala
 
 | Lokasi | Isi |
 | --- | --- |
-| `src/skills/` | Sumber 14 skill, netral alat |
+| `src/skills/` | Sumber 17 skill (3 pintu masuk, 14 internal), netral alat |
 | `src/agents/` | Sumber 5 agen peran, frontmatter netral |
 | `src/instructions.md` | Blok aturan untuk berkas instruksi tiap alat |
-| `workflow/` | Matriks konteks, prosedur gate, template |
+| `workflow/` | Matriks konteks, prosedur gate, adapter papan di `boards/`, template, kerangka proyek |
 | `scripts/sdd.py` | Skrip penjaga aturan, disalin apa adanya ke `<SDD_HOME>/scripts/` |
 | `scripts/install_agent.py` | Pemasang. Profil tiap alat ada di `TOOLS`. |
 | `install.sh` | Antarmuka interaktif pemasang |
@@ -18,6 +18,7 @@ Repo ini adalah **sumber** workflow produksi tiket, bukan tempat workflow dijala
 
 - Tulis path workflow di `src/` dan `workflow/*.md` dengan placeholder `{{SDD_HOME}}`, bukan path tetap. Pemasang menolak berkas yang masih menyisakan placeholder.
 - Jangan menulis istilah khusus satu alat di `src/` (misalnya nama tool Claude Code). Perbedaan antar-alat diurus di `TOOLS` dan `agent_files` pada pemasang.
-- Aturan "uji coba tidak memakai Jira" dijaga `sdd.py pending-push`. Jangan melemahkannya.
+- Aturan "uji coba tidak memakai Jira" dijaga `sdd.py pending-push` dan `sdd.py remember`. Jangan melemahkannya.
+- Hanya `push-board` dan `audit-epic` yang boleh berbicara ke papan kanban. Detail platform ditulis di `workflow/boards/<platform>.md`, bukan di skill lain.
 - Setelah mengubah `scripts/`, `src/`, `workflow/`, atau `install.sh`, jalankan `python3 -m unittest discover tests`.
 - Jika template tiket Mobile berubah, sesuaikan `MOBILE_SECTIONS` di `sdd.py` dan skill `slice-tickets`.

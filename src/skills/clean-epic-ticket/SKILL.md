@@ -1,50 +1,50 @@
 ---
 name: clean-epic-ticket
-description: Membersihkan epic yang selesai atau dibatalkan. Menutup tiket usang, mengarsipkan draft, dan memperbarui Foundation setelah disetujui.
-argument-hint: "<proyek> <epic> <selesai|dibatalkan>"
+description: Membersihkan epic yang selesai atau dibatalkan. Menutup tiket usang di papan kanban, mengarsipkan draft, dan memperbarui Foundation setelah disetujui.
+argument-hint: "<epic> <selesai|dibatalkan>"
 disable-model-invocation: true
 ---
 
-# /clean-epic-ticket
+# clean-epic-ticket
 
 Masukan operator: $ARGUMENTS
 
 Kamu adalah SPV. Hanya kamu yang memanggil skill dan agen peran.
 
-Rantai: `audit-epic` → `sync-foundation` → `request-approval` → `push-jira`. Tidak ada gate EGM di sini, tetapi persetujuan manusia tetap wajib karena menutup tiket sulit dibatalkan.
+Rantai: `setup-board` → `setup-docs` → `setup-design` → `audit-epic` → `sync-foundation` → `request-approval` → `push-board`. Tidak ada gate EGM di sini, tetapi persetujuan manusia tetap wajib karena menutup tiket sulit dibatalkan.
 
-## 1. Temukan epic
+## 1. Siapkan platform dan temukan epic
 
-Cari epic seperti di `/modify-epic-ticket`. Jika operator tidak menyebut alasannya, tanyakan: selesai atau dibatalkan.
+Panggil skill `setup-board`, `setup-docs`, dan `setup-design`. Ketiganya selesai tanpa bertanya bila pilihan sudah tercatat.
 
-## 2. Ambil keadaan tracker
+Epic boleh disebut dengan slug folder atau kode epic di papan. Untuk kode papan, cari `board_epic` yang cocok di `docs/epics/*/epic.json`. Jika operator tidak menyebut alasannya, tanyakan: selesai atau dibatalkan.
 
-Baca `tracker.type` di `project.json` dan ambil semua tiket di bawah epic dari tujuan itu: kode, judul, status, dan ketergantungan. Simpan ke `<epic>/jira-snapshot.json` sebagai daftar objek `{ "key", "summary", "status", "links" }`. Langkah ini hanya membaca. Pada proyek pilot, jangan membuka Jira sama sekali.
+Jika epic dibuat sebelum platform papan diganti, tiketnya tetap di platform lama. Tanyakan operator platform mana yang dipakai epic ini sebelum lanjut, dan jangan mengubah `sdd.json`.
 
-## 3. Audit
+## 2. Audit
 
-Jalankan agen peran `pjm` dengan brief: folder epic, alasan pembersihan, dan skill `audit-epic`. Hasilnya `audit.md`.
+Panggil skill `audit-epic`. Skill ini membaca papan lewat adapter dan menghasilkan `audit.md`.
 
 Jika audit berisi "perlu keputusan operator", tanyakan sekarang dan catat jawabannya di `audit.md` sebelum lanjut.
 
-## 4. Usulan Foundation
+## 3. Usulan Foundation
 
-Jalankan agen peran `hoe` dengan brief: folder epic, folder proyek, alasan pembersihan, dan skill `sync-foundation`. Hasilnya `foundation-proposal.md`.
+Jalankan agen peran `hoe` dengan brief: folder epic, alasan pembersihan, dan skill `sync-foundation`. Hasilnya `foundation-proposal.md`.
 
-## 5. Persetujuan
+## 4. Persetujuan
 
-Panggil skill `request-approval` dengan jenis clean. Paketnya memuat tiket yang akan ditutup dan teks persis yang akan masuk Foundation. Tiap usulan Foundation disetujui pemilik dokumennya menurut `project.json`. Tanyakan operator apakah pemilik itu sudah menyetujui.
+Panggil skill `request-approval` dengan jenis clean. Paketnya memuat tiket yang akan ditutup dan teks persis yang akan masuk Foundation. Tiap usulan Foundation disetujui pemilik dokumennya menurut `owners` di `sdd.json`. Tanyakan operator apakah pemilik itu sudah menyetujui.
 
-## 6. Jalankan
+## 5. Jalankan
 
 Setelah disetujui:
 
-1. Panggil skill `push-jira` untuk menutup tiket yang disetujui di `audit.md` dan melepas link yatim.
-2. Terapkan `foundation-proposal.md` ke `projects/<proyek>/foundation/` persis seperti yang disetujui. Jika contract berubah, salin `contract/api.yaml` ke `foundation/contracts/` dan perbarui barisnya di `katalog-contract.md`.
-3. Pindahkan folder epic ke `projects/<proyek>/epics/_arsip/<slug>/`.
+1. Panggil skill `push-board` untuk menutup tiket yang disetujui di `audit.md` dan melepas link yatim.
+2. Terapkan `foundation-proposal.md` persis seperti yang disetujui, ke `docs/foundation/`, `docs/contracts/`, dan `docs/adr/`. Jika contract berubah, salin `contract/api.yaml` ke `docs/contracts/<nama>-<versi>.yaml` dan perbarui barisnya di `docs/contracts/katalog.md`.
+3. Pindahkan folder epic ke `docs/epics/_arsip/<slug>/`.
 
-Kerjakan dalam urutan itu. Folder epic dipindahkan terakhir karena `push-jira` membaca persetujuan dari sana.
+Kerjakan dalam urutan itu. Folder epic dipindahkan terakhir karena `push-board` membaca persetujuan dari sana.
 
-## 7. Tutup
+## 6. Tutup
 
-Laporkan tiket yang ditutup, dokumen Foundation yang berubah, dan lokasi arsip. Tawarkan untuk meng-commit hasilnya.
+Laporkan tiket yang ditutup, dokumen Foundation yang berubah, dan lokasi arsip. Jika `docs.platform` bukan `repo`, perbarui salinan Foundation di platform itu. Tawarkan untuk meng-commit hasilnya.

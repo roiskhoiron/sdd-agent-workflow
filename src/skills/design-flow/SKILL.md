@@ -1,17 +1,33 @@
 ---
 name: design-flow
-description: Skill internal Product Designer. Menyusun flow layar, mockup, dan daftar state dari PRD. Dijalankan oleh agen peran product-designer.
+description: Skill internal Product Designer. Menyusun flow layar, prototipe atau mockup, dan daftar state dari PRD, lalu memutuskan apakah epic butuh tiket desain. Dijalankan oleh agen peran product-designer.
 user-invocable: false
 ---
 
-# Menyusun flow dan mockup
+# Menyusun flow dan prototipe
 
-Masukan: `prd.md` di folder epic, `foundation/design-system.md`, dan `mockup_tool` di `project.json`. Keluaran: `flow.md`, mengikuti `{{SDD_HOME}}/workflow/templates/flow.md`.
+Masukan: `prd.md` di folder epic, `docs/foundation/design-system.md`, dan bagian `design` di `sdd.json`. Keluaran: `flow.md`, mengikuti `{{SDD_HOME}}/workflow/templates/flow.md`.
 
-Cara kerja mengikuti `mockup_tool`:
+## Platform desain
 
-- `figma` atau `claude-design`: jika PRD atau brief memberi tautan mockup, rujuk tautan itu dan uraikan tiap layar dalam teks. Jika belum ada mockup, tulis wireframe teks dan catat di laporan akhir bahwa mockup visual masih harus dibuat Lead UI/UX.
-- `teks`: wireframe teks adalah mockup-nya. Uraikan susunan layar dari atas ke bawah.
+Baca `design.platform` dan `design.location` di `sdd.json`:
+
+| Platform | Cara kerja |
+| --- | --- |
+| `figcraft` (default) atau `figma` | Baca berkas desain tim lewat tool MCP platform itu: komponen yang ada, layar serupa, token. Rujuk layar yang relevan dengan tautannya. |
+| `claude-design` | Rujuk tautan desain yang diberikan operator dan uraikan tiap layar dalam teks. |
+| Integrasi tidak tersedia di alatmu | Tulis wireframe teks dan catat di laporan akhir bahwa berkas desain tidak terbaca langsung. |
+
+Kamu tidak membuat desain final di berkas desain tim.
+
+## Perlu tiket desain?
+
+Jawab di bagian "Perlu tiket desain?" pada `flow.md`:
+
+- **Ya**, jika epic butuh komponen baru di design system atau banyak layar baru. `flow.md` menjadi brief untuk workflow UI/UX, dan `slice-tickets` membuat tiket desain yang memblokir tiket Mobile dan Frontend web.
+- **Tidak**, jika layar bisa disusun dari komponen dan pola yang sudah ada. Flow dan rujukan desain di `flow.md` cukup untuk tiket Mobile.
+
+Tulis alasannya dalam satu kalimat. Jika ragu, jawab ya.
 
 Yang membuat flow lolos gate:
 
@@ -23,4 +39,4 @@ Yang membuat flow lolos gate:
 
 Jangan merancang endpoint atau bentuk data server. Cukup sebut data apa yang dibutuhkan layar.
 
-Reviewer gate akan menguji satu hal: apakah setiap state layar tergambar.
+Reviewer gate akan menguji satu hal: apakah setiap state layar tergambar, dan apakah keputusan tiket desain punya alasan.

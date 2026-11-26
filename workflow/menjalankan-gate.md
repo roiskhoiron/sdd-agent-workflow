@@ -7,8 +7,8 @@ Prosedur ini dijalankan SPV setelah setiap skill penulis. Skrip `{{SDD_HOME}}/sc
 | Gate | Penulis | Dokumen yang diuji | Rujukan yang boleh dibaca reviewer |
 | --- | --- | --- | --- |
 | `prd` | `pdm` | `prd.md` | tidak ada |
-| `flow` | `product-designer` | `flow.md` | `prd.md`, `foundation/design-system.md` |
-| `contract` | `hoe` | `contract/`, `specs/` | `prd.md`, `flow.md`, `foundation/katalog-contract.md` |
+| `flow` | `product-designer` | `flow.md` | `prd.md`, `docs/foundation/design-system.md` |
+| `contract` | `hoe` | `contract/`, `specs/` | `prd.md`, `flow.md`, `docs/contracts/katalog.md` |
 | `tickets` | `pjm` | `tickets/*.md` | `{{SDD_HOME}}/workflow/context-matrix.md`, dan untuk tiap tiket hanya berkas yang ditautkan tiket itu |
 
 Pada gate `tickets`, reviewer tidak diberi `prd.md` atau `specs/`. Ia harus bisa memahami tiket dari tiket itu sendiri dan rujukannya, sama seperti agen delivery nanti.
@@ -30,7 +30,7 @@ Pada gate `tickets`, reviewer tidak diberi `prd.md` atau `specs/`. Ia harus bisa
 
    ```
    Gate: <gate>
-   Folder proyek: projects/<proyek>
+   Akar proyek: .
    Dokumen yang diuji: <path>
    Rujukan yang boleh dibaca: <path, atau "tidak ada">
    Tulis hasil ke: <epic>/reviews/<gate>-r<N>.json

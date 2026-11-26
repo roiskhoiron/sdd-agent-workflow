@@ -1,12 +1,12 @@
 ---
 name: request-approval
-description: Skill internal SPV. Merangkum hasil dan temuan gate menjadi paket persetujuan, lalu mencatat keputusan pemilik manusia. Dipanggil oleh ketiga skill pintu masuk sebelum /push-jira.
+description: Skill internal SPV. Merangkum hasil dan temuan gate menjadi paket persetujuan, lalu mencatat keputusan pemilik manusia. Dipanggil oleh ketiga skill pintu masuk sebelum push-board.
 user-invocable: false
 ---
 
 # Meminta persetujuan manusia
 
-Tidak ada jalur ke tracker yang melewati langkah ini. Skrip menolak persetujuan selama masih ada gate yang belum lolos, temuan yang belum diputuskan, contract berubah yang belum disetujui pemiliknya, atau tiket yang gagal lint.
+Tidak ada jalur ke papan yang melewati langkah ini. Skrip menolak persetujuan selama masih ada gate yang belum lolos, temuan yang belum diputuskan, contract berubah yang belum disetujui pemiliknya, atau tiket yang gagal lint.
 
 ## 1. Periksa kesiapan
 
@@ -42,6 +42,6 @@ Tunjukkan lokasi `approval.md` dan daftar tiket, lalu tanyakan apakah operator s
 - **Setuju**: jalankan `python3 {{SDD_HOME}}/scripts/sdd.py approve <epic> --by "<nama>"`. Untuk jenis clean tambahkan `--clean`, karena epic yang dibatalkan bisa saja belum pernah lolos gate. Jika skrip menolak, tampilkan alasannya dan selesaikan dulu.
 - **Belum**: minta komentarnya, panggil penulis yang relevan dengan komentar itu, buka ulang gate dokumen yang berubah, lalu mulai lagi dari langkah 1.
 
-Persetujuan mengunci isi folder epic. Setiap perubahan berkas sesudahnya membatalkan persetujuan, dan `/push-jira` akan menolak berjalan.
+Persetujuan mengunci isi folder epic. Setiap perubahan berkas sesudahnya membatalkan persetujuan, dan `push-board` akan menolak berjalan.
 
 Jangan pernah menjalankan `approve` atau `decide` tanpa jawaban eksplisit operator di percakapan ini.

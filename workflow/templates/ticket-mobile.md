@@ -3,7 +3,7 @@ kind: role
 role: mobile
 size: sedang
 contract_version: 1.0.0
-blocked_by: contract-01
+blocked_by: contract-01, design-01
 ---
 # [KODE-TIKET] Judul singkat berbentuk hasil
 
@@ -17,7 +17,7 @@ Epic: [tautan epic]
 - Platform: Android / iOS / keduanya
 
 ## 3. Layar dan flow
-- Mockup: [tautan]
+- Prototipe dan halaman handover: [tautan], atau mockup bila prototipe belum ada
 - State yang wajib ditangani: kosong, memuat, berhasil, gagal, offline
 
 ## 4. API contract
@@ -38,5 +38,5 @@ Penyimpanan token, izin perangkat, data sensitif di log.
 Tautan ke design system, konvensi kode, konfigurasi environment.
 
 ## 9. Ketergantungan
-- Diblokir oleh: [tiket contract atau tiket backend]
+- Diblokir oleh: [tiket contract, tiket desain, atau tiket backend]
 - Memblokir: ...

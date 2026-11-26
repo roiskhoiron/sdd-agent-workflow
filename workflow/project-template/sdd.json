@@ -1,22 +1,31 @@
 {
   "name": "ISI: nama proyek",
-  "platforms": ["android", "ios"],
   "pilot": true,
-  "tracker": {
-    "type": "lokal",
-    "github_repo": "ISI jika type github: pemilik/nama-repo"
+  "platforms": ["android", "ios"],
+  "board": {
+    "platform": null,
+    "location": null,
+    "status_map": {
+      "siap": "Todo",
+      "review": "Ready To Review",
+      "selesai": "Done"
+    },
+    "role_labels": {
+      "mobile": "role:mobile",
+      "ui-ux": "role:ui-ux",
+      "contract": "role:contract"
+    },
+    "capabilities": null
   },
-  "jira": {
-    "site": "ISI: alamat situs, misalnya nama.atlassian.net",
-    "project_key": "ISI",
-    "epic_issue_type": "Epic",
-    "ticket_issue_type": "Story",
-    "ready_status": "ISI: nama status siap dikerjakan di papan",
-    "done_status": "Done",
-    "blocks_link_type": "Blocks"
+  "docs": {
+    "platform": null,
+    "location": "docs/"
+  },
+  "design": {
+    "platform": null,
+    "location": null
   },
   "contract_format": "openapi-3.1",
-  "mockup_tool": "ISI: figma, claude-design, atau teks",
   "owners": {
     "spv": "ISI",
     "prd": "ISI: product owner",
